@@ -1,4 +1,4 @@
-import express, { urlencoded } from 'express';
+import express from "express";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from 'url';
@@ -33,7 +33,7 @@ expressApp.use(myConnection(mysql, {
   port: 3306
   
 }, 'single'));
-expressApp.use(express.urlencoded({extended: false}));
+
 
 // routes
 expressApp.use("/", accountRouter)
