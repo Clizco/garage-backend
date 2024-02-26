@@ -1,0 +1,44 @@
+<%- include('partials/_header') %> 
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body">
+                    <form action="/update/<%= data.user_id %>" method="post">
+                        <input
+                        type="text"
+                        name="first_name"
+                        value="<%= data.first_name%>"
+                        class="form-control mb-2"
+                        autofocus
+                      />
+                      <input
+                        type="text"
+                        name="last_name"
+                        value="<%= data.last_name%>"
+                        class="form-control mb-2"
+                      />
+                      <input
+                        type="text"
+                        name="gender"
+                        value="<%= data.gender%>"
+                        class="form-control mb-2"
+                      />
+                      <input
+                        type="text"
+                        name="user_email"
+                        value="<%= data.user_email%>"
+                        class="form-control mb-2"
+                      />
+                        <button type="submit" class="btn btn-primary">
+                            Edit Customer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/_footer') %> 
