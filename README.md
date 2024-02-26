@@ -11,7 +11,7 @@ This project includes:
 - path
 - mysql
 - mariadb
--nodejs
+- nodejs
 
 # Contribute:
 
