@@ -1,4 +1,4 @@
-# Nexit
+# NEXIT
 
 Nexit is based on my previous BLUD project, BLUD was designed as an API for managing users within a database....
 
