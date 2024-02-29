@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import controller from '../controllers/customerController.js';
 
+
 const accountRouter = Router()
+
 
 // middleware that logs the IP
 accountRouter.use((req, res, next) => {
@@ -12,6 +14,12 @@ accountRouter.use((req, res, next) => {
 
 // get customer
 accountRouter.get('/', controller.list);
+
+
+
+accountRouter.get('/signup', function(req, res){
+    res.render('pages/signup', {title: 'Signup Page'})
+});
 
 // post customer
 accountRouter.post('/add', controller.save);
