@@ -1,0 +1,58 @@
+<%- include('../partials/_header') %> 
+
+<div class="col-md-5">
+    <div class="card">
+        <div class="card-body">
+            <form action="/add" method="post">
+                <input
+                type="text"
+                name="first_name"
+                placeholder="Firstname"
+                class="form-control mb-2"
+                autofocus
+              />
+              <br>
+              <input
+                type="text"
+                name="last_name"
+                placeholder="Lastname"
+                class="form-control mb-2"
+              />
+              <br>
+              <input
+                type="text"
+                name="user_email"
+                placeholder="Email"
+                class="form-control mb-2"
+              />
+              <br>
+              <input
+                type="text"
+                name="user_password"
+                placeholder="Password"
+                class="form-control mb-2"
+              />
+              <br>
+              <input
+                type="text"
+                name="user_phone"
+                placeholder="Phone"
+                class="form-control mb-2"
+              />
+              <br>
+              <input
+                type="date"
+                name="birth_date"
+                placeholder="birthdate"
+                class="form-control mb-2"
+              />
+              <br>
+                <button type="submit" class="btn btn-primary">
+                    Save Customer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/_footer') %> 
