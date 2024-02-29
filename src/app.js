@@ -1,4 +1,4 @@
-import express from "express";
+import express, { urlencoded } from 'express';
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from 'url';
@@ -28,12 +28,12 @@ expressApp.use(morgan('dev'));
 expressApp.use(myConnection(mysql, {
   host: "127.0.0.1",
   user: "root",
-  database: 'users',
+  database: 'customers',
   password: "Legolas*27!",
   port: 3306
   
 }, 'single'));
-
+expressApp.use(express.urlencoded({extended: false}));
 
 // routes
 expressApp.use("/", accountRouter)
