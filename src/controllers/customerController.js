@@ -3,12 +3,12 @@ const controller = {};
 // Encargada de listar los usuarios dentro de la base de datos 
 controller.list = (req, res) => {
     req.getConnection((err, conn) => {
-        conn.query('SELECT * FROM users', (err, customers) => {
+        conn.query('SELECT * FROM customer', (err, customer) => {
             if (err) {
                 res.json(err);
             }
             res.render('customers', {
-                data: customers
+                data: customer
             })
         })
     })
@@ -19,18 +19,21 @@ controller.save = async (req, res) => {
     const data = req.body;
 
     await req.getConnection((err, conn) => {
-        conn.query('INSERT INTO users set ?', [data])
-        res.redirect('/')
+        conn.query('INSERT INTO customer set ?', [data])
+        if (err) {
+            res.json(err);
+        }
+        res.redirect("/")
         
     })
 }
-
+ 
 // Encargada de editar los usuarios dentro de la base de datos
 controller.edit = (req, res) => {
     const { id } = req.params;
 
     req.getConnection((err, conn)=> {
-        conn.query('SELECT * FROM users WHERE user_id = ?', [id], (err, customer) => {
+        conn.query('SELECT * FROM customer WHERE id = ?', [id], (err, customer) => {
             res.render('customer_edit', {
                 data: customer[0]
             })
@@ -42,7 +45,7 @@ controller.update = (req, res) => {
     const { id } = req.params;
     const newCustomer = req.body;
     req.getConnection((err, conn) => {
-        conn.query('UPDATE users set ? WHERE user_id = ?', [newCustomer, id], (err, rows) => {
+        conn.query('UPDATE customer set ? WHERE id = ?', [newCustomer, id], (err, rows) => {
             res.redirect('/');
         })
     })
