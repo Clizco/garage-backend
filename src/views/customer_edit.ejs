@@ -5,7 +5,7 @@
         <div class="col-md-5">
             <div class="card">
                 <div class="card-body">
-                    <form action="/update/<%= data.user_id %>" method="post">
+                    <form action="/update/<%= data.id %>" method="post">
                         <input
                         type="text"
                         name="first_name"
@@ -21,14 +21,26 @@
                       />
                       <input
                         type="text"
-                        name="gender"
-                        value="<%= data.gender%>"
+                        name="user_email"
+                        value="<%= data.user_email%>"
                         class="form-control mb-2"
                       />
                       <input
                         type="text"
-                        name="user_email"
-                        value="<%= data.user_email%>"
+                        name="user_password"
+                        value="<%= data.user_password%>"
+                        class="form-control mb-2"
+                      />
+                      <input
+                        type="text"
+                        name="birth_date"
+                        value="<%= data.birth_date%>"
+                        class="form-control mb-2"
+                      />
+                      <input
+                        type="text"
+                        name="user_phone"
+                        value="<%= data.user_phone%>"
                         class="form-control mb-2"
                       />
                         <button type="submit" class="btn btn-primary">
