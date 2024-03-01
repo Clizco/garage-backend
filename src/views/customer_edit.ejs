@@ -5,42 +5,42 @@
         <div class="col-md-5">
             <div class="card">
                 <div class="card-body">
-                    <form action="/update/<%= data.id %>" method="post">
+                    <form action="/update/<%= customer.id %>" method="post">
                         <input
                         type="text"
                         name="first_name"
-                        value="<%= data.first_name%>"
+                        value="<%= customer.first_name%>"
                         class="form-control mb-2"
                         autofocus
                       />
                       <input
                         type="text"
                         name="last_name"
-                        value="<%= data.last_name%>"
+                        value="<%= customer.last_name%>"
                         class="form-control mb-2"
                       />
                       <input
                         type="text"
                         name="user_email"
-                        value="<%= data.user_email%>"
+                        value="<%= customer.user_email%>"
                         class="form-control mb-2"
                       />
                       <input
                         type="text"
                         name="user_password"
-                        value="<%= data.user_password%>"
+                        value="<%= customer.user_password%>"
                         class="form-control mb-2"
                       />
                       <input
-                        type="text"
+                        type="date"
                         name="birth_date"
-                        value="<%= data.birth_date%>"
+                        value="<%= customer.birth_date%>"
                         class="form-control mb-2"
                       />
                       <input
                         type="text"
                         name="user_phone"
-                        value="<%= data.user_phone%>"
+                        value="<%= customer.user_phone%>"
                         class="form-control mb-2"
                       />
                         <button type="submit" class="btn btn-primary">
