@@ -16,3 +16,9 @@ CREATE TABLE customer (
     user_phone INT(10) UNIQUE NOT NULL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- to show all tables --
+show tables;
+
+-- to describe table --
+describe customer;
