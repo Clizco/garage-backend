@@ -7,6 +7,12 @@ import {
     renderCustomers,
     updateCustomer,
 } from "../controllers/customerController.js";
+import {
+    getUsers,
+    createUser,
+    getUser,
+} from "../controllers/userController.js"
+import { validateCreate } from "../validators/users.js"
 
 const accountRouter = Router()
 
@@ -18,12 +24,23 @@ accountRouter.use((req, res, next) => {
 })
  
 
+// RUTAS SISTEMA INTERNO
 accountRouter.get('/', renderCustomers);
 accountRouter.post('/add', createCustomers);
 accountRouter.post('/login', loginCustomer)
 accountRouter.get('/update/:id', editCustomer);
 accountRouter.post('/update/:id', updateCustomer);
 accountRouter.get('/delete/:id', deleteCustomer);
+
+
+// RUTAS API
+accountRouter.get('/users/:email', getUser)
+accountRouter.get('/users/all', getUsers);
+accountRouter.post('/signup/', createUser);
+accountRouter.get('/delete/:id')
+
+
+
 
 // RUTAS PARA LOS EJS
 accountRouter.get('/signup', function(req, res){
