@@ -45,3 +45,14 @@ export const deleteCustomer = async (req, res) => {
     res.redirect("/");
     
 };
+
+// Encargada de logear a los usuarios
+export const loginCustomer = async (req, res) => {
+   const {email, password} = req.body;
+
+   const session = req.params('void')
+
+   if ( email, password ) {
+    
+   }
+}
