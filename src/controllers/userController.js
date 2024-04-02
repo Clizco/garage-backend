@@ -2,7 +2,7 @@ import { pool } from "../db.js"
 import jwt from "jsonwebtoken"
 import { jwtDecode } from "jwt-decode"
 import config from "../config.js"
-
+import { validateCreate } from "../validators/users.js"
 
 //Encargada de traer un solo usuario dentro de la base de datos
 export const getUser = async (req, res) => {
@@ -15,8 +15,10 @@ export const getUser = async (req, res) => {
 
 // Encargada de traer todos los usuarios dentro de la base de datos
 export const getUsers = async (req, res) => {
-    const [rows] = await pool.query("SELECT * FROM customer");
+    
+    const [rows] = await pool.query("SELECT * FROM customer")
     return res.status(200).json(rows)
+   
 }
 
 // Encargada de crear usuarios en la base de datos
@@ -38,6 +40,18 @@ export const createUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
+    try{
+
+        const User = req.params.email;
+
+        const result = await pool.query("DELETE FROM customer WHERE user_email = ?", [User]);
+        
+        res.json(result)
+
+    } catch (error) {
+        res.status(500);
+        res.send(error.message);
+    }
 
 }
  
