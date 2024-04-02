@@ -6,7 +6,7 @@ BLUD used a NOSQL database so I decided to make a new project using a SQL databa
 
 This project includes:
 
--express
+- express
 - dotenv
 - path
 - mysql
