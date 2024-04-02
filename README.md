@@ -1,43 +1,102 @@
-# NEXIT
 
-Nexit is based on my previous BLUD project, BLUD was designed as an API for managing users within a database....
+# Project Title
 
-BLUD used a NOSQL database so I decided to make a new project using a SQL database
+Nexit is a fork of [blud](https://github.com/Clizco/blud), it is a CRUD project but in SQL, which allows customers to be registered for a purchasing system, it has views made in ejs for a front end view.
 
-This project includes:
+This project includes technologies such as:
 
--express
 - dotenv
+- express
 - path
-- mysql
-- mariadb
-- nodejs
-
-# Contribute:
-
-If you want to improve the system, contact me and let's improve it :D
-
-# Disclaimer
-
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/.
+- morgan
+- cookieParser
+- bcrypt
 
 
-# Commands:
+## API Reference
 
+#### Get all customers
+
+```http
+  GET /users/customers/all
 ```
-npm start # build the project (prestart script) and start the server
 
-npm run start:dev # start the project in watch mode (nodemon)
+| Parameter | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `api_key` | `string` | **Required**. Your API key |
 
-npm run serve # start the project without building the project (ts-node)
+#### Get a single customer data
 
-npm run build # builds the project to ./dist
-
-npm run debug # turns on the debug mode and runs npm run start
-
-npm run dev # turns on the debug mode and runs npm run start:dev
+```http
+  GET /users/${email}
 ```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `email`      | `string` | **Required**. user email to get user data |
+
+
+#### Create a new customer
+
+```http
+  POST /users/signup/
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `first_name`      | `varchar` | **Required**. first name of the customer |
+| `last_name`       | `varchar` | **Required**. last name of the customer |
+| `user_email`      | `varchar` | **Required**. email of the customer |
+| `user_password`   | `varbinary` | **Required**. password of the customer |
+| `user_phone`      | `int` | **Required**. phone of the customer |
+| `birth_date`      | `date` | **Required**. birth date of the customer |
+
+#### Delete a customer
+
+```http
+  Delete /users/delete/:email
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `user_email`      | `varchar` | **Required**. email is used to locate the user and delete them from the database |
+
+
+
+
+
+
+
+## Deployment
+
+To deploy this project run
+
+```bash
+  npm run dev
+```
+
+
+## Environment Variables
+
+To run this project, you will need to add the following environment variables to your .env file
+
+`PORT`
+
+`DATABASE_PASSWORD`
+
+
+## Author
+
+- [@Clizco](https://github.com/Clizco)
+
+
+## Feedback
+
+If you have any feedback, please contact me with my email.
+
+## Roadmap
+
+- Update Users
+
+- Front-end view in React
+
