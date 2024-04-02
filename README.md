@@ -1,5 +1,5 @@
 
-# Project Title
+# Nexit
 
 Nexit is a fork of [blud](https://github.com/Clizco/blud), it is a CRUD project but in SQL, which allows customers to be registered for a purchasing system, it has views made in ejs for a front end view.
 
