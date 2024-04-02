@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import morgan from 'morgan';
 import accountRouter from './routes/customer.js';
 import cookieParser from "cookie-parser";
+import userRouter from "./routes/users.js";
 
 dotenv.config()
 
@@ -34,7 +35,8 @@ expressApp.use(express.text())
 expressApp.use(express.json())
 
 // routes
-expressApp.use("/", accountRouter)
+expressApp.use("/customer", accountRouter)
+expressApp.use("/users", userRouter)
 
 // static files
 expressApp.use(express.static(path.join(__dirname, 'public')))
