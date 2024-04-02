@@ -5,7 +5,7 @@ Nexit is a fork of [blud](https://github.com/Clizco/blud), it is a CRUD project 
 
 This project includes technologies such as:
 
--express
+- express
 - dotenv
 - express
 - path
