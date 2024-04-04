@@ -29,7 +29,7 @@ This project includes technologies such as:
 #### Get a single customer data
 
 ```http
-  GET /users/${email}
+  GET /users/:email
 ```
 
 | Parameter | Type     | Description                       |
@@ -52,6 +52,21 @@ This project includes technologies such as:
 | `user_phone`      | `int` | **Required**. phone of the customer |
 | `birth_date`      | `date` | **Required**. birth date of the customer |
 
+#### Update a customer
+
+```http
+  POST /users/update/:id
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `first_name`      | `varchar` | **Required**. first name of the customer |
+| `last_name`       | `varchar` | **Required**. last name of the customer |
+| `user_email`      | `varchar` | **Required**. email of the customer |
+| `user_password`   | `varbinary` | **Required**. password of the customer |
+| `user_phone`      | `int` | **Required**. phone of the customer |
+| `birth_date`      | `date` | **Required**. birth date of the customer |
+
 #### Delete a customer
 
 ```http
@@ -61,11 +76,6 @@ This project includes technologies such as:
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
 | `user_email`      | `varchar` | **Required**. email is used to locate the user and delete them from the database |
-
-
-
-
-
 
 
 ## Deployment
