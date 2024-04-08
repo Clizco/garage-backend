@@ -2,12 +2,9 @@ import {Router } from "express";
 import { validateCreate } from "../validators/users.js";
 import { pool } from "../db.js";
 import jwt from "jsonwebtoken";
-import { jwtDecode } from "jwt-decode";
 import config from "../config.js";
 import bcrypt from "bcrypt"
-import mysql from "mysql"
- 
-const saltRounds = 10;
+
 
 const userRouter = Router()
 
@@ -20,11 +17,19 @@ userRouter.use((req, res, next) => {
 
 //se encarga de traer un usuario atraves de un correo
 userRouter.get("/:email", async (req, res) => {
+    try{
 
-    const User = req.params.email;
+        const User = req.params.email;
 
-    const [results] = await pool.query("SELECT * FROM customer WHERE user_email = ?", [User] )
-    return res.status(200).json(results)
+        const [results] = await pool.query("SELECT * FROM customer WHERE user_email = ?", [User] )
+    
+        return res.status(200).json(results)
+
+    } catch (error){
+        console.error(error)
+    }
+
+    
 
 })
 
@@ -32,107 +37,84 @@ userRouter.get("/:email", async (req, res) => {
 //se encarga de traer todos los usuarios en la base de datos
 userRouter.get("/customers/all", async (req, res) => {
 
-    const [rows] = await pool.query("SELECT * FROM customer")
+    const [rows] = await pool.query("SELECT id, created_at, first_name, last_name, user_email, birth_date, user_phone, updated_at FROM customer")
     return res.status(200).json(rows)
 
 })
 
-//se encarga de verificar el token de los usuarios
-userRouter.get("/users/token", async (req, res) => {
 
-    const token = req.header['x-access-token'];
-    if (!token) {
-        return res.status(401).json({
-            auth: false,
-            message: 'No token provided'
-        })
-    }
-
-    const decoded = jwt.verify(token, config.secret);
-    const user = await newUser.findByid(decoded._id, {password: 0})
-    if(!user){
-        return res.status(404).send('No user found')
-    }
-
-    res.json(user)
-
-})
 
 //se encarga de crear los usuarios
 userRouter.post("/signup/", validateCreate, async (req, res) => {
+    try {
 
-    bcrypt.genSalt(10, function(err, salt){
-        bcrypt.hash(req.body.user_password, salt, function(err, hash){
+        bcrypt.genSalt(10, function(err, salt){
+            bcrypt.hash(req.body.user_password, salt, function(err, hash){
 
-        const newUser = ({ "first_name":req.body.first_name,
-                           "last_name":req.body.last_name, 
-                           "user_email":req.body.user_email, 
-                           "user_password":hash, 
-                           "birth_date":req.body.birth_date, 
-                           "user_phone":req.body.user_phone 
-                        })
-    
-      
-                        
-        const token = jwt.sign({id: newUser._id}, config.secret, {
-            expiresIn: 60 * 60 * 24
-        })
+                const newUser = ({ 
+                                "first_name":req.body.first_name,
+                                "last_name":req.body.last_name, 
+                                "user_email":req.body.user_email, 
+                                "user_password":hash, 
+                                "birth_date":req.body.birth_date, 
+                                "user_phone":req.body.user_phone 
+                                })
+            
+            
+                if (!newUser){
+                    res.status(401).send("Por favor ingrese todos los datos del usuario")
+                }
+                const token = jwt.sign({id: newUser._id}, config.secret, {
+                    expiresIn: 60 * 60 * 24
+                })
 
-        const result = pool.query("INSERT INTO customer set ?", [newUser]);
-        
-        
-        res.json({auth: true, result, token}); 
+                const result = pool.query("INSERT INTO customer set ?", [newUser]);
+                
+                
+                res.json({auth: true, result, token}); 
+            });
+        });
 
-
-        })
-
-        
-
-    })
-
+    } catch (error) {
+        console.error(error)
+        res.status(500)
+        res.send(error.message)
+    }
     
 });
 
 
-//inicio de sesion de los usuarios
+//inicio de sesion de los usuarios --- 100%
 userRouter.post("/signin/", async (req, res) => {
     try {
-    
+        const email = req.body.user_email;
+        const password = req.body.user_password;
+        const query = "SELECT * FROM customer WHERE user_email = ?";
+        const [currentUser] = await pool.query(query, [email]);
+        const user =  currentUser[0]
 
-    const email = req.body.user_email;
-    const password = req.body.user_password;
+        if(!email){
+            res.status(401).send("Falta el correo !!")
+        }else if(!password){
+            res.status(401).send("Falta la contrasena !!")
+        } else if (currentUser == 0) {
+            res.status(401).send("El usuario no se encuentra registrado, porfavor registrese");    
+        } else {
+            const token = jwt.sign({id: user._id}, config.secret, { expiresIn: 60 * 60 * 24 });
+            const result = bcrypt.compareSync(password, user.user_password);
+            if (!result){
+                res.status(401).send({auth: result, message: "La contrasena es incorrecta, porfavor verificala"})
+            } else {
+                res.json({auth: result, message: `Contrasena correcta, bienvenido ${email} `, token});
+            }
+        }
 
-    const query = "SELECT * FROM customer WHERE user_email = ?";
-
-
-    const [currentUser] = await pool.query(query, [email]);
-    // console.log(currentUser)
-
-    if(!currentUser){
-        res.status(401).send("Credenciales incorrectas");
-        return;
-    }
-    
-    const user = currentUser[0]
-    // console.log(user)
-    const result = await bcrypt.compareSync(password, user.user_password);
-
-    console.log(result)
-    if(!result) {
-        res.status(401)
-        res.send("Credenciales incorrectas");
-        return;
-    }
- 
-    res.status(201)
-    res.send("Inicio de sesion exitoso");
-    console.log(user)
     } catch(error){
-        console.error(error)
-        res.status(500)
-        res.send("Error interno del servidor")
+            console.error(error)
+            res.status(500)
+            res.send("Error interno del servidor")
 
-    }
+        }
 });
 
 
@@ -140,13 +122,32 @@ userRouter.post("/signin/", async (req, res) => {
 //actualizacion de los datos de un usuario
 userRouter.post("/update/:id", async(req, res) => {
     try {
-    const { id } = req.params;
-    
-    const newCustomer = req.body;
 
-    const result = await pool.query("UPDATE customer set ? WHERE id = ?", [newCustomer, id])
+        const { id } = req.params;
 
-    res.json(result)
+        
+        bcrypt.genSalt(10, function(err, salt){
+            bcrypt.hash(req.body.user_password, salt, function(err, hash){
+
+                const newCustomer = ({ 
+                    "first_name":req.body.first_name,
+                    "last_name":req.body.last_name, 
+                    "user_email":req.body.user_email, 
+                    "user_password":hash, 
+                    "birth_date":req.body.birth_date, 
+                    "user_phone":req.body.user_phone 
+                    })
+                
+                if (!newCustomer){
+                        res.status(401).send("Por favor ingrese todos los datos del usuario")
+                }
+        
+                const result = pool.query("UPDATE customer set ? WHERE id = ?", [newCustomer, id])
+        
+                res.json({updated: true, result}); 
+                
+            });
+        });
 
     } catch (error) {
         res.status(500);
