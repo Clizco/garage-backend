@@ -2,28 +2,25 @@ import { check } from "express-validator";
 import { validateResult } from "../helpers/validateHelpers.js";
 
 const validateCreate = [
-    
-    // firstname validation
+    // USER FIRSTNAME VALIDATION
     check('first_name')
-    .not()
-    .isEmpty()
-    .withMessage('please fill this camp')
-    .exists(),
-
-    // lastname validation
+    .custom((value) => {
+        return value.match(/^[A-Za-z ]+$/);
+      })
+      .withMessage('Do not use special characters within the name'),
+    
+    // USER LASTNAME VALIDATION
     check('last_name')
-    .not()
-    .isEmpty()
-    .withMessage('please fill this camp')
-    .exists()
-    .withMessage ('Lastname is required')
-    .isLength({ min: 5, max: 20})
-    .withMessage('Please enter minimum 8 characters or maximun 20 characters  '),
+    .custom((value) => {
+        return value.match(/^[A-Za-z ]+$/);
+    })
+        .withMessage('Do not use special characters within the name'),
 
-    // email validation
+
+
+    // USER EMAIL VALIDATION
     check('user_email')
-    .exists()
-    .withMessage('El email ya se encuentra registrado')
+   
     .isEmail()
     .withMessage('Please enter valid email'),
             (req, res, next) => {
@@ -31,25 +28,14 @@ const validateCreate = [
 
     },
 
-    // phone validation
     check('user_phone')
-    .not()
-    .isEmpty()
-    .withMessage('please fill this camp')
-    .exists().withMessage("el telefono ya esta registrado")
-    .isNumeric()
-    .withMessage('Please only enter numbers')
-    .isLength({ min: 8, max: 8 })
-    .withMessage('Please enter minimun 8 characters or maximun 8 characters'),
+        .optional({ checkFalsy: true })
+        .isNumeric().withMessage('Only numbers')
 
-    // birthdate  validation
-    check('birth_date')
-    .not()
-    .isEmpty()
-    .withMessage('please fill this camp')
-    .toDate()
-    .optional({ checkFalsy: true})
-    .withMessage('Please enter valid dateofbirth'),
+       
+    
+
+    
 
 ]
 
