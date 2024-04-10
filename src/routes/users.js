@@ -48,10 +48,10 @@ userRouter.get("/customers/all", async (req, res) => {
 userRouter.post("/signup/", validateCreate, async (req, res) => {
     try {
 
-        bcrypt.genSalt(10, function(err, salt){
-            bcrypt.hash(req.body.user_password, salt, function(err, hash){
+        bcrypt.genSalt(10, async(err, salt) => {
+            bcrypt.hash(req.body.user_password, salt, async(err, hash) => {
 
-                const newUser = ({ 
+                const newUser =({ 
                                 "first_name":req.body.first_name,
                                 "last_name":req.body.last_name, 
                                 "user_email":req.body.user_email, 
@@ -68,7 +68,7 @@ userRouter.post("/signup/", validateCreate, async (req, res) => {
                     expiresIn: 60 * 60 * 24
                 })
 
-                const result = pool.query("INSERT INTO customer set ?", [newUser]);
+                const result = await pool.query("INSERT INTO customer set ?", [newUser]);
                 
                 
                 res.json({auth: true, result, token}); 
