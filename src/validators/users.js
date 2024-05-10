@@ -18,11 +18,8 @@ const validateCreate = [
     // birth_date validation
     check('birth_date').not().isEmpty().withMessage('please fill this camp').toDate().optional({ checkFalsy: true}).withMessage('Please enter valid dateofbirth'), (req, res, next) => { validateResult(req, res, next); },
 
+    // user_phone validation
     check('user_phone').not().isEmpty().custom((value) => { return value.match(/^[0-9 ]*$/); }).withMessage('Do not use special characters within the name'), (req, res, next) => { validateResult(req, res, next); },
-
-    
-
-    
 
 ]
 
