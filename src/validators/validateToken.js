@@ -1,17 +1,19 @@
-import jsonwebtoken from 'jsonwebtoken'
-const {verify} = jsonwebtoken
-
 // middleware to validate token (rutas protegidas)
-const validateToken = (req, res, next) => {
-    const token = req.header('auth-token')
-    if (!token) return res.status(401).json({ error: 'Acceso denegado' })
-    try {
-        const verified = verify(token, process.env.TOKEN_SECRET)
-        req.user = verified
-        next() 
-    } catch (error) {
-        res.status(400).json({error: 'token no es válido'})
+const verifyToken = (req, res, next) => {
+    const token = req.headers['x-access-token'];
+    if (!token) {
+        return res.status(403).send({ auth: false, message: 'No token provided.' });
     }
-}
 
-export {validateToken};
+    jwt.verify(token, config.secret, (err, decoded) => {
+        if (err) {
+            return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+        }
+
+        // Si el token es válido, guardamos los datos desencriptados en req.user
+        req.user = decoded;
+        next();
+    });
+};
+
+export {verifyToken};
