@@ -6,18 +6,19 @@ import morgan from 'morgan';
 import fs from 'fs';
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import accountRouter from './routes/usersRoutes.js';
-import userRouter from "./routes/usersRoutes.js";
-import productRouter from "./routes/productsRoutes.js";
-import contactRouter from "./routes/contactRoutes.js";
-import ticketRouter from "./routes/ticketsRoutes.js";
-import accountsRouter from "./routes/accountRoutes.js";
-import propertyRouter from "./routes/propertyRoutes.js";
-import invoiceRouter from "./routes/invoiceRoutes.js";
-import legalRouter from "./routes/legalRoutes.js";
-import providerRouter from "./routes/providerRoutes.js";
-import clientRouter from "./routes/clientsRoutes.js";
-import reportRouter from "./routes/reportsRoutes.js";
+import providerRouter from "./routes/Provider/providerRoutes.js";
+import userRouter from "./routes/User/usersRoutes.js"
+import productRouter from "./routes/Product/productRoutes.js";
+import contactRouter from "./routes/Contact/contactRoutes.js";
+import ticketRouter from "./routes/Ticket/ticketsRoutes.js";
+import accountsRouter from "./routes/Account/accountRoutes.js";
+import propertyRouter from "./routes/Property/propertyRoutes.js";
+import invoiceRouter from "./routes/Invoice/invoiceRoutes.js";
+import legalRouter from "./routes/Legal/legalRoutes.js";
+import reportRouter from "./routes/Report/reportsRoutes.js";
+import clientRouter from "./routes/Client/clientsRoutes.js"
+
+
 
 dotenv.config()
 
@@ -64,7 +65,6 @@ expressApp.use('/uploads', express.static(path.join(__dirname, 'uploads')));  //
 expressApp.use("/clients", clientRouter);
 expressApp.use("/providers", providerRouter);
 expressApp.use("/users", userRouter);
-expressApp.use("/products", productRouter);
 expressApp.use("/contact", contactRouter);
 expressApp.use("/tickets", ticketRouter);
 expressApp.use("/accounts", accountsRouter);

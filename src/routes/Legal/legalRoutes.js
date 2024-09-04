@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { pool } from "../db.js";
+import { pool } from "../../db.js";
 import fileUpload from "express-fileupload";
 import path from "path";
 import fs from "fs";

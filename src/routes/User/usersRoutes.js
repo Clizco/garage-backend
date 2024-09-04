@@ -1,8 +1,8 @@
 import {Router } from "express";
-import { validateCreate } from "../validators/users.js";
-import { pool } from "../db.js";
+import { validateCreate } from "../../validators/users.js";
+import { pool } from "../../db.js";
 import jwt from "jsonwebtoken";
-import config from "../config.js";
+import config from "../../config.js";
 import bcrypt from "bcrypt"
 import { jwtDecode } from "jwt-decode";
 

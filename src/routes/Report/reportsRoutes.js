@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { pool } from "../db.js";
+import { pool } from "../../db.js";
 import jwt from "jsonwebtoken";
-import config from "../config.js";
+import config from "../../config.js";
 
 const reportRouter = Router();
 
