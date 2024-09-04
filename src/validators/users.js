@@ -13,7 +13,7 @@ const validateCreate = [
     check('user_email').isEmail().withMessage('Please enter valid email'), (req, res, next) => { validateResult(req, res, next); } ,
 
     // user_password validation
-    check('user_password'),
+    check('user_password').isStrongPassword().withMessage('Please use a better password'), (req, res, next) => { validateResult(req, res, next); },
 
     // birth_date validation
     //check('birth_date').not().isEmpty().withMessage('please fill this camp').toDate().optional({ checkFalsy: true}).withMessage('Please enter valid dateofbirth'), (req, res, next) => { validateResult(req, res, next); },

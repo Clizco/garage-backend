@@ -4,6 +4,7 @@ import { pool } from "../db.js";
 import jwt from "jsonwebtoken";
 import config from "../config.js";
 import bcrypt from "bcrypt"
+import { jwtDecode } from "jwt-decode";
 
 const userRouter = Router()
 
@@ -47,7 +48,7 @@ userRouter.get("/users/all", async (req, res) => {
 //se encarga de crear los usuarios
 userRouter.post("/signup/", validateCreate, async (req, res) => {
         try {
-            const { user_firstname, user_lastname, user_email, user_password, user_phonenumber, role_id } = req.body;
+            const { user_firstname, user_lastname, user_email, user_password, user_phonenumber } = req.body;
     
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(user_password, salt);
@@ -58,7 +59,7 @@ userRouter.post("/signup/", validateCreate, async (req, res) => {
                 user_email, 
                 user_password: hash,
                 user_phonenumber,
-                //role_id
+                
             };  
     
             if (!newUser.user_email || !newUser.user_password ) {
@@ -100,17 +101,56 @@ userRouter.post("/signin/", async (req, res) => {
             if (!result) {
                 res.status(401).send({ auth: result, message: "La contrasena es incorrecta, porfavor verificala" });
             } else {
-                const token = jwt.sign({ id: user.id, 
+                const token = jwt.sign({ id: user.id,
                                          email: user.user_email  }, config.secret, { expiresIn: 60 * 60 * 24 });
-
-                res.json({ auth: result, message: `Contrasena correcta, bienvenido ${email} `, token });
+                
+                
+                var decode = jwtDecode(token)
+                res.json({ auth: result, message: `Contrasena correcta, bienvenido ${email} `, token, decode});
             }
         }
     } catch (error) {
         console.error(error);
         res.status(500).send("Error interno del servidor");
+        
     }
 });
+
+userRouter.get("/users/token", async (req, res) => {
+    const token = req.headers['x-access-token'];
+
+    if (!token) {
+        return res.status(401).json({
+            auth: false,
+            message: 'No token provided'
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(token, config.secret);
+
+    
+        const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [decoded.id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                message: 'No user found'
+            });
+        }
+
+        const user = rows[0];
+        delete user.password;
+
+        res.json(user);
+    } catch (err) {
+        return res.status(500).json({
+            auth: false,
+            message: 'Failed to authenticate token.'
+        });
+    }
+});
+
+
 
 
 //actualizacion de los datos de un usuario

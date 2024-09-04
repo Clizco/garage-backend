@@ -23,19 +23,6 @@ ticketRouter.use(fileUpload({
     createParentPath: true
 }));
 
-// Definir el directorio para almacenar videos e imágenes cargados
-const videoDirectory = path.join(__dirname, "../uploads/videos");
-const imageDirectory = path.join(__dirname, "../uploads/images");
-
-// Asegurarse de que los directorios existan
-if (!fs.existsSync(videoDirectory)) {
-    fs.mkdirSync(videoDirectory, { recursive: true });
-}
-
-if (!fs.existsSync(imageDirectory)) {
-    fs.mkdirSync(imageDirectory, { recursive: true });
-}
-
 // Obtener todos los tickets
 ticketRouter.get("/tickets/all", async (req, res) => {
     try {
@@ -51,7 +38,35 @@ ticketRouter.get("/tickets/all", async (req, res) => {
 // Crear un nuevo ticket con carga de video e imagen
 ticketRouter.post("/create", async (req, res) => {
     try {
-        const { ticket_title, user_id, status, relatedto, ticket_description } = req.body;
+        const { ticket_title, user_id, ticket_status, ticket_priority, ticket_relatedto, ticket_description } = req.body;
+
+        if (!ticket_title || !user_id) {
+            return res.status(400).send("Please provide all required ticket data.");
+        } 
+
+        const newTicket = {
+            ticket_title: ticket_title, 
+            ticket_status: ticket_status || "open",
+            ticket_description: ticket_description || 'No description provided',
+            ticket_relatedto: ticket_relatedto,
+            ticket_priority: ticket_priority || "Baja",
+            user_id: user_id || 1
+        };
+
+        const result = await pool.query("INSERT INTO tickets SET ?", [newTicket]);
+        const ticketId = result[0].insertId;
+
+        // Crear directorios específicos para el ticketId
+        const ticketVideoDirectory = path.join(__dirname, `../uploads/tickets/${ticketId}/videos`);
+        const ticketImageDirectory = path.join(__dirname, `../uploads/tickets/${ticketId}/images`);
+
+        if (!fs.existsSync(ticketVideoDirectory)) {
+            fs.mkdirSync(ticketVideoDirectory, { recursive: true });
+        }
+
+        if (!fs.existsSync(ticketImageDirectory)) {
+            fs.mkdirSync(ticketImageDirectory, { recursive: true });
+        }
 
         let videoFilename = null;
         let imageFilename = null;
@@ -60,7 +75,7 @@ ticketRouter.post("/create", async (req, res) => {
         if (req.files && req.files.video) {
             let videoFile = req.files.video;
             videoFilename = `${Date.now()}_${videoFile.name}`;
-            let videoPath = path.join(videoDirectory, videoFilename);
+            let videoPath = path.join(ticketVideoDirectory, videoFilename);
 
             // Mover el archivo de video al directorio designado
             await videoFile.mv(videoPath);
@@ -70,28 +85,21 @@ ticketRouter.post("/create", async (req, res) => {
         if (req.files && req.files.image) {
             let imageFile = req.files.image;
             imageFilename = `${Date.now()}_${imageFile.name}`;
-            let imagePath = path.join(imageDirectory, imageFilename);
+            let imagePath = path.join(ticketImageDirectory, imageFilename);
 
             // Mover el archivo de imagen al directorio designado
             await imageFile.mv(imagePath);
         }
 
-        const newTicket = {
-            ticket_title,
-            status: status || "open",
-            ticket_description: ticket_description || 'No description provided',
-            relatedto: relatedto,
-            user_id: user_id || 1,
-            video_path: videoFilename ? `/uploads/videos/${videoFilename}` : null, // Guardar la ruta del video en la base de datos
-            file_path: imageFilename ? `/uploads/images/${imageFilename}` : null // Guardar la ruta de la imagen en la base de datos
+        // Actualizar la base de datos con las rutas de los archivos
+        const updatedTicket = {
+            video_path: videoFilename ? `/uploads/tickets/${ticketId}/videos/${videoFilename}` : null, // Guardar la ruta del video en la base de datos
+            file_path: imageFilename ? `/uploads/tickets/${ticketId}/images/${imageFilename}` : null // Guardar la ruta de la imagen en la base de datos
         };
 
-        if (!newTicket.ticket_title || !newTicket.user_id) {
-            return res.status(400).send("Please provide all required ticket data.");
-        }
+        await pool.query("UPDATE tickets SET ? WHERE id = ?", [updatedTicket, ticketId]);
 
-        const result = await pool.query("INSERT INTO tickets SET ?", [newTicket]);
-        res.json({ created: true, ticketId: result.insertId });
+        res.json({ created: true, ticketId: ticketId });
     } catch (error) {
         console.error("Error creating ticket:", error);
         res.status(500).send(error.message);

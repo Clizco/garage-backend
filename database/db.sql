@@ -1,5 +1,5 @@
 -- Creando la base de datos --
-CREATE DATABASE pmdb;
+CREATE DATABASE petro;
 
 -- Accediendo a la base de datos --
 use PMDB;
@@ -55,16 +55,106 @@ CREATE TABLE tickets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    ticket_title VARCHAR(100) NOT NULL,
+    ticket_title ENUM('Techos', 'Fachada (Estructural)', 'Estacionamientos (Estructural)', 'Losas internas', 'Goteras', 'Cimientos', 'Vidrieras', 'Limpieza Fachada', 'Cielo Raso', 'Puertas Mecanicas' 'Puertas Electricas', 'Aceras(Estructural)', 'Calles (Estructural)', 'Zonas Verdes', 'Aseo Areas Externas', 'Aire Acondicionado', 'Escaleras Electricas', 'Elevadores', 'Sistemas Contra Incendios', 'Alarma Local', 'Evaporadores', 'Compresores', 'Condensadores', 'Planta electrica', 'Transformadores', 'Material Electrico', 'Linea de Gas', 'Plomeria Enterrada en Cimientos', 'Plomeria No Enterrada en Cimientos', 'Alcantarillado', 'Tanques de Agua', 'Plantas de Tratamiento', 'Trampas de Grasa', 'Trampas de Agua' ) NOT NULL,
+    ticket_priority ENUM('Urgente', 'Importante', 'Programable') NOT NULL DEFAULT 'Programable',
     ticket_description VARCHAR(255) NOT NULL,
+    ticket_assignedto ENUM('Javier Solis', 'Ricardo Bernat') NOT NULL DEFAULT 'Javier Solis',
     file_path VARCHAR(255) DEFAULT NULL,
-    video_path VARCHAR(255) DEFAULT NULL;
-    status ENUM('open', 'in_progress', 'closed') NOT NULL DEFAULT 'open',
-    relatedto ENUM('MACHETAZO SAN MIGUELITO', 'MACHETAZO BRISAS DEL GOLF', 'MACHETAZO CHITRE', 'RODELAG') NOT NULL,
-    user_id INT
+    video_path VARCHAR(255) DEFAULT NULL,
+    ticket_status ENUM('Open', 'in_progress', 'closed') NOT NULL DEFAULT 'open',
+    ticket_relatedto INT NOT NULL,
+    user_id INT,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    report_title VARCHAR(45) NOT NULL,
+    report_description VARCHAR(500) NOT NULL,
+    report_relatedto INT,
+    user_id INT,
+    updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE properties (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    property_name VARCHAR(45) NOT NULL,
+    property_country VARCHAR(45) NOT NULL,
+    property_province VARCHAR(45) NOT NULL,
+    property_city VARCHAR(45) NOT NULL,
+    property_address VARCHAR(255) NOT NULL,
+    property_relationship INT,
+    document_path VARCHAR(255) DEFAULT NULL,
+    file_path VARCHAR(255) DEFAULT NULL,
+    users_id INT,
+    updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (users_id) REFERENCES users(id)
+);
+
+CREATE TABLE invoices (
+    id INT AUTO_INCREMENT PRIMARY KEY, 
+    created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    invoice_number VARCHAR(45) NOT NULL,
+    invoice_date VARCHAR(45) NOT NULL,
+    invoice_due_date VARCHAR(45) NOT NULL,
+    invoice_total VARCHAR(45) NOT NULL,
+    invoice_description VARCHAR(255) NOT NULL,
+    invoice_status ENUM('PENDIENTE', 'PAGADA') NOT NULL,
+    invoice_relationship INT,
+    file_path VARCHAR(255) DEFAULT NULL,
+    users_id INT,
+    updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (users_id) REFERENCES users(id)
+);
+
+CREATE TABLE legal (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    legal_name VARCHAR(45) NOT NULL,
+    legal_nif VARCHAR(45) NOT NULL,
+    legal_country VARCHAR(45) NOT NULL,
+    legal_province VARCHAR(45) NOT NULL,
+    legal_city VARCHAR(45) NOT NULL,
+    legal_address VARCHAR(255) NOT NULL,
+    document_path VARCHAR(255) DEFAULT NULL,
+    file_path VARCHAR(255) DEFAULT NULL,
+    users_id INT,
+    updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (users_id) REFERENCES users(id)
+);
+
+CREATE TABLE providers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    provider_name VARCHAR(45) NOT NULL,
+    provider_legal_name VARCHAR(45) NOT NULL,
+    provider_nif VARCHAR(45) NOT NULL,
+    provider_website VARCHAR(45) NOT NULL,
+    provider_phone VARCHAR(45) NOT NULL,
+    provider_country VARCHAR(45) NOT NULL,
+    provider_province VARCHAR(45) NOT NULL,
+    provider_city VARCHAR(45) NOT NULL,
+    provider_address VARCHAR(255) NOT NULL,
+    updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE clients (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    client_name VARCHAR(45) NOT NULL,
+    client_legal_name VARCHAR(45) NOT NULL,
+    client_nif VARCHAR(45) NOT NULL,
+    client_website VARCHAR(45) NOT NULL,
+    client_phone VARCHAR(45) NOT NULL,
+    client_country VARCHAR(45) NOT NULL,
+    client_province VARCHAR(45) NOT NULL,
+    client_city VARCHAR(45) NOT NULL,
+    client_address VARCHAR(255) NOT NULL,
+    updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE products (
     id INT AUTO_INCREMENT PRIMARY KEY,

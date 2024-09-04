@@ -12,6 +12,12 @@ import productRouter from "./routes/productsRoutes.js";
 import contactRouter from "./routes/contactRoutes.js";
 import ticketRouter from "./routes/ticketsRoutes.js";
 import accountsRouter from "./routes/accountRoutes.js";
+import propertyRouter from "./routes/propertyRoutes.js";
+import invoiceRouter from "./routes/invoiceRoutes.js";
+import legalRouter from "./routes/legalRoutes.js";
+import providerRouter from "./routes/providerRoutes.js";
+import clientRouter from "./routes/clientsRoutes.js";
+import reportRouter from "./routes/reportsRoutes.js";
 
 dotenv.config()
 
@@ -55,11 +61,17 @@ expressApp.use(express.static(path.join(__dirname, 'public')));
 expressApp.use('/uploads', express.static(path.join(__dirname, 'uploads')));  // Sirviendo archivos de la carpeta 'uploads'
 
 // routes
+expressApp.use("/clients", clientRouter);
+expressApp.use("/providers", providerRouter);
 expressApp.use("/users", userRouter);
 expressApp.use("/products", productRouter);
 expressApp.use("/contact", contactRouter);
 expressApp.use("/tickets", ticketRouter);
 expressApp.use("/accounts", accountsRouter);
+expressApp.use("/properties", propertyRouter);
+expressApp.use("/invoices", invoiceRouter);
+expressApp.use("/legals", legalRouter);
+expressApp.use("/reports", reportRouter);
 
 // starting the server
 export default expressApp;
