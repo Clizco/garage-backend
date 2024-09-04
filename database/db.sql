@@ -156,17 +156,6 @@ CREATE TABLE clients (
     updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE products (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    product_name VARCHAR(45) NOT NULL,
-    product_description VARCHAR(45) NOT NULL,
-    product_price VARCHAR(45) NOT NULL,
-    users_id INT,
-    updated_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (users_id) REFERENCES users(id)
-);
-
 
 -- Accediendo a la tablas --
 use users;

@@ -2,7 +2,7 @@ import {Router } from "express";
 import { validateCreate } from "../../validators/users.js";
 import { pool } from "../../db.js";
 import jwt from "jsonwebtoken";
-import config from "../../config.js";
+import config from "../../config.js"
 import bcrypt from "bcrypt"
 import { jwtDecode } from "jwt-decode";
 
@@ -48,7 +48,7 @@ userRouter.get("/users/all", async (req, res) => {
 //se encarga de crear los usuarios
 userRouter.post("/signup/", validateCreate, async (req, res) => {
         try {
-            const { user_firstname, user_lastname, user_email, user_password, user_phonenumber } = req.body;
+            const { user_firstname, user_lastname, user_email, role_id, user_password, user_phonenumber } = req.body;
     
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(user_password, salt);
@@ -59,6 +59,7 @@ userRouter.post("/signup/", validateCreate, async (req, res) => {
                 user_email, 
                 user_password: hash,
                 user_phonenumber,
+                role_id
                 
             };  
     
@@ -116,6 +117,7 @@ userRouter.post("/signin/", async (req, res) => {
     }
 });
 
+
 userRouter.get("/users/token", async (req, res) => {
     const token = req.headers['x-access-token'];
 
@@ -150,6 +152,42 @@ userRouter.get("/users/token", async (req, res) => {
     }
 });
 
+
+//Saber cual es el rol del usuario
+userRouter.get("/users/role/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Consulta para obtener el nombre del rol junto con el ID del rol
+        const [rows] = await pool.query(
+            `SELECT roles.role_name 
+             FROM users 
+             JOIN roles ON users.role_id = roles.id 
+             WHERE users.id = ?`, 
+            [id]
+        );
+
+        // Verificar si se encontró un usuario con el ID dado
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        const userRole = rows[0].role_name;
+        console.log("Rol del usuario:", userRole);
+
+        // Verificar si el rol es "administrador" o "usuario"
+        if (userRole === 'admin' || userRole === 'user') {
+            // Si es administrador o usuario, proceder
+            return res.status(200).json({ message: 'Acceso permitido', role: userRole });
+        } else {
+            // Si el rol no es permitido
+            return res.status(403).json({ error: 'Acceso denegado' });
+        }
+    } catch (error) {
+        console.error("Error al obtener el rol del usuario:", error);
+        return res.status(500).json({ error: 'Error al obtener el rol del usuario' });
+    }
+});
 
 
 

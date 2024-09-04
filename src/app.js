@@ -8,16 +8,14 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import providerRouter from "./routes/Provider/providerRoutes.js";
 import userRouter from "./routes/User/usersRoutes.js"
-import productRouter from "./routes/Product/productRoutes.js";
 import contactRouter from "./routes/Contact/contactRoutes.js";
 import ticketRouter from "./routes/Ticket/ticketsRoutes.js";
-import accountsRouter from "./routes/Account/accountRoutes.js";
 import propertyRouter from "./routes/Property/propertyRoutes.js";
 import invoiceRouter from "./routes/Invoice/invoiceRoutes.js";
 import legalRouter from "./routes/Legal/legalRoutes.js";
 import reportRouter from "./routes/Report/reportsRoutes.js";
 import clientRouter from "./routes/Client/clientsRoutes.js"
-
+import accountsRouter from "./routes/Account/accountRoutes.js"
 
 
 dotenv.config()
@@ -38,16 +36,12 @@ expressApp.set("port", process.env.PORT || 3000);
 expressApp.set('views', path.join(__dirname, 'views'));
 
 // middleware that logs the IP of users
-accountRouter.use((req, res, next) => {
+accountsRouter.use((req, res, next) => {
     console.log(req.ip);
     next();
 }); 
 
-// middleware that logs the IP of products
-productRouter.use((req, res, next) => {
-    console.log(req.ip);
-    next();
-});
+
 
 // middlewares
 expressApp.use(morgan('dev'));
