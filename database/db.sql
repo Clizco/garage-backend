@@ -67,7 +67,7 @@ CREATE TABLE tickets (
         'Plomeria No Enterrada en Cimientos', 'Alcantarillado', 'Tanques de Agua', 
         'Plantas de Tratamiento', 'Trampas de Grasa', 'Trampas de Agua'
     ) NOT NULL,
-    ticket_priority ENUM('Urgente', 'Importante', 'Programable') NOT NULL DEFAULT 'Programable',
+    ticket_priority ENUM('Urgente', 'Importante', 'Normal') NOT NULL DEFAULT 'Normal',
     ticket_description VARCHAR(255) NOT NULL,
     ticket_assignedto ENUM('Javier Solis', 'Ricardo Bernat') NOT NULL DEFAULT 'Javier Solis',
     file_path VARCHAR(255) DEFAULT NULL,
