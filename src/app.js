@@ -64,7 +64,7 @@ expressApp.use("/tickets", ticketRouter);
 expressApp.use("/accounts", accountsRouter);
 expressApp.use("/properties", propertyRouter);
 expressApp.use("/invoices", invoiceRouter);
-expressApp.use("/legals", legalRouter);
+expressApp.use("/legal", legalRouter);
 expressApp.use("/reports", reportRouter);
 
 // starting the server
