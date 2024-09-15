@@ -69,11 +69,11 @@ CREATE TABLE tickets (
     ) NOT NULL,
     ticket_priority ENUM('Urgente', 'Importante', 'Normal') NOT NULL DEFAULT 'Normal',
     ticket_description VARCHAR(255) NOT NULL,
-    ticket_assignedto ENUM('Javier Solis', 'Ricardo Bernat') NOT NULL DEFAULT 'Javier Solis',
+    ticket_assignedto INT,
     file_path VARCHAR(255) DEFAULT NULL,
     video_path VARCHAR(255) DEFAULT NULL,
     ticket_status ENUM('Open', 'in_progress', 'closed') NOT NULL DEFAULT 'Open',
-    ticket_relatedto INT NOT NULL,
+    ticket_relatedto INT,
     user_id INT,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );

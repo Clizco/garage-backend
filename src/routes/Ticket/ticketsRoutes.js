@@ -38,7 +38,7 @@ ticketRouter.get("/tickets/all", async (req, res) => {
 // Crear un nuevo ticket con carga de video e imagen
 ticketRouter.post("/create", async (req, res) => {
     try {
-        const { ticket_title, user_id, ticket_status, ticket_priority, ticket_relatedto, ticket_description } = req.body;
+        const { ticket_title, user_id, ticket_status, ticket_assignedto, ticket_priority, ticket_relatedto, ticket_description } = req.body;
 
         if (!ticket_title || !user_id) {
             return res.status(400).send("Please provide all required ticket data.");
@@ -49,6 +49,7 @@ ticketRouter.post("/create", async (req, res) => {
             ticket_status: ticket_status || "open",
             ticket_description: ticket_description || 'No description provided',
             ticket_relatedto: ticket_relatedto,
+            ticket_assignedto: ticket_assignedto, 
             ticket_priority: ticket_priority || "Baja",
             user_id: user_id || 1
         };

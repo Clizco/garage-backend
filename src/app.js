@@ -16,6 +16,7 @@ import legalRouter from "./routes/Legal/legalRoutes.js";
 import reportRouter from "./routes/Report/reportsRoutes.js";
 import clientRouter from "./routes/Client/clientsRoutes.js"
 import accountsRouter from "./routes/Account/accountRoutes.js"
+import rolesRouter from "./routes/Roles/rolesRoutes.js";
 
 
 dotenv.config()
@@ -53,7 +54,7 @@ expressApp.use(cors());
 
 // static files
 expressApp.use(express.static(path.join(__dirname, 'public')));
-expressApp.use('/uploads', express.static(path.join(__dirname, 'uploads')));  // Sirviendo archivos de la carpeta 'uploads'
+expressApp.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 
 // routes
 expressApp.use("/clients", clientRouter);
@@ -66,6 +67,7 @@ expressApp.use("/properties", propertyRouter);
 expressApp.use("/invoices", invoiceRouter);
 expressApp.use("/legal", legalRouter);
 expressApp.use("/reports", reportRouter);
+expressApp.use("/roles", rolesRouter);
 
 // starting the server
 export default expressApp;

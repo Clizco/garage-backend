@@ -32,6 +32,7 @@ userRouter.get("/:email", async (req, res) => {
 })
 
 
+
 //se encarga de traer todos los usuarios en la base de datos
 userRouter.get("/users/all", async (req, res) => {
     try {
@@ -43,6 +44,24 @@ userRouter.get("/users/all", async (req, res) => {
       return res.status(500).json({ error: 'Error al obtener usuarios' });
     }
 });
+
+// se encarga de traer un usuario atraves de un id
+userRouter.get("/users/:id", async (req, res) => {
+    try {
+        const user = req.params.id;
+        const [results] = await pool.query("SELECT * FROM users WHERE id = ?", [user]);
+
+        if (results.length > 0) {
+            return res.status(200).json(results[0]);
+        } else {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Error del servidor" });
+    }
+});
+
 
 
 //se encarga de crear los usuarios
@@ -192,7 +211,7 @@ userRouter.get("/users/role/:id", async (req, res) => {
 
 
 //actualizacion de los datos de un usuario
-userRouter.post("/update/:id", async(req, res) => {
+userRouter.post("/users/update/:id", async(req, res) => {
     try {
 
         const { id } = req.params;
@@ -202,12 +221,13 @@ userRouter.post("/update/:id", async(req, res) => {
             bcrypt.hash(req.body.user_password, salt, function(err, hash){
 
                 const newusers = ({ 
-                    "first_name":req.body.first_name,
-                    "last_name":req.body.last_name, 
+                    "user_firstname":req.body.user_firstname,
+                    "user_lastname":req.body.user_lastname, 
                     "user_email":req.body.user_email, 
-                    "user_password":hash, 
-                    "user_phone":req.body.user_phone 
+                    "user_phonenumber":req.body.user_phonenumber ,
+                    "role_id":req.body.role_id
                     })
+
                 
                 if (!newusers){
                         res.status(401).send("Por favor ingrese todos los datos del usuario")
