@@ -53,7 +53,7 @@ reportRouter.get("/reports/all", async (req, res) => {
 });
 
 // Traer un reporte por ID
-reportRouter.get("/:id", async (req, res) => {
+reportRouter.get("/reports/:id", async (req, res) => {
     try {
         const id = req.params.id;
 

@@ -68,10 +68,12 @@ CREATE TABLE tickets (
         'Plantas de Tratamiento', 'Trampas de Grasa', 'Trampas de Agua'
     ) NOT NULL,
     ticket_priority ENUM('Urgente', 'Importante', 'Normal') NOT NULL DEFAULT 'Normal',
+    ticket_status ENUM('Abierto', 'En Proceso', 'Cerrado') NOT NULL DEFAULT 'Abierto',
     ticket_description VARCHAR(255) NOT NULL,
     ticket_assignedto INT,
     file_path VARCHAR(255) DEFAULT NULL,
     video_path VARCHAR(255) DEFAULT NULL,
+    ticket_report INT,
     ticket_status ENUM('Open', 'in_progress', 'closed') NOT NULL DEFAULT 'Open',
     ticket_relatedto INT,
     user_id INT,

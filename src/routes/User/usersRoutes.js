@@ -225,7 +225,7 @@ userRouter.post("/users/update/:id", async(req, res) => {
                     "user_lastname":req.body.user_lastname, 
                     "user_email":req.body.user_email, 
                     "user_phonenumber":req.body.user_phonenumber ,
-                    "role_id":req.body.role_id
+                    "role_id":req.body.role_id 
                     })
 
                 

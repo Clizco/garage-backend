@@ -25,10 +25,6 @@ dotenv.config()
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const videoDir = path.join(__dirname, 'uploads/videos');
-if (!fs.existsSync(videoDir)) {
-    fs.mkdirSync(videoDir, { recursive: true });
-}
 
 // settings
 const expressApp = express()
