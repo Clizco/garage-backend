@@ -137,9 +137,10 @@ userRouter.post("/signin/", async (req, res) => {
 });
 
 
-userRouter.get("/users/token", async (req, res) => {
+userRouter.get("/user/token/", async (req, res) => {
     const token = req.headers['x-access-token'];
 
+    
     if (!token) {
         return res.status(401).json({
             auth: false,
@@ -152,6 +153,7 @@ userRouter.get("/users/token", async (req, res) => {
 
     
         const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [decoded.id]);
+        console.log("Datos obtenidos:", rows);
 
         if (rows.length === 0) {
             return res.status(404).json({
