@@ -6,17 +6,12 @@ import morgan from 'morgan';
 import fs from 'fs';
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import providerRouter from "./routes/Provider/providerRoutes.js";
 import userRouter from "./routes/User/usersRoutes.js"
-import contactRouter from "./routes/Contact/contactRoutes.js";
-import ticketRouter from "./routes/Ticket/ticketsRoutes.js";
-import propertyRouter from "./routes/Property/propertyRoutes.js";
-import invoiceRouter from "./routes/Invoice/invoiceRoutes.js";
-import legalRouter from "./routes/Legal/legalRoutes.js";
-import reportRouter from "./routes/Report/reportsRoutes.js";
-import clientRouter from "./routes/Client/clientsRoutes.js"
 import accountsRouter from "./routes/Account/accountRoutes.js"
 import rolesRouter from "./routes/Roles/rolesRoutes.js";
+import provincesRouter from "./routes/Provinces/provincesRoutes.js";
+import shipmentRouter from "./routes/Shipments/shipmentsRoutes.js";
+import calculatorRouter from "./routes/Calculator/calculator.js";
 
 
 dotenv.config()
@@ -55,17 +50,12 @@ expressApp.use(express.static(path.join(__dirname, 'public')));
 expressApp.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 
 // routes
-expressApp.use("/clients", clientRouter);
-expressApp.use("/providers", providerRouter);
 expressApp.use("/users", userRouter);
-expressApp.use("/contact", contactRouter);
-expressApp.use("/tickets", ticketRouter);
-expressApp.use("/accounts", accountsRouter);
-expressApp.use("/properties", propertyRouter);
-expressApp.use("/invoices", invoiceRouter);
-expressApp.use("/legal", legalRouter);
-expressApp.use("/reports", reportRouter);
 expressApp.use("/roles", rolesRouter);
+expressApp.use("/provinces", provincesRouter);
+expressApp.use("/shipments", shipmentRouter);
+expressApp.use("/api", calculatorRouter);
+
 
 // starting the server
 export default expressApp;

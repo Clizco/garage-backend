@@ -1,12 +1,11 @@
-import expressApp from "./app.js"
-import { port } from "./config.js"
+import express from "express";
+import { port } from "./config.js";
+import expressApp from "./app.js"; // Asegúrate de que esto también esté bien definido
 
-expressApp.listen(port)
-console.log(`Servidor levantando en puerto ${port}`)
+// Servir archivos estáticos desde la carpeta "public"
+expressApp.use(express.static('public'));
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-        e.preventDefault();
-        alert('Inspector deshabilitado');
-    }
+// Escuchar en el puerto definido
+expressApp.listen(port, () => {
+    console.log(`🚀 Servidor levantado en puerto ${port}`);
 });

@@ -67,7 +67,7 @@ userRouter.get("/users/:id", async (req, res) => {
 //se encarga de crear los usuarios
 userRouter.post("/signup/", validateCreate, async (req, res) => {
         try {
-            const { user_firstname, user_lastname, user_email, role_id, user_password, user_phonenumber } = req.body;
+            const { user_firstname, user_lastname, user_email, user_province, role_id, user_password, user_phonenumber } = req.body;
     
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(user_password, salt);
@@ -76,6 +76,7 @@ userRouter.post("/signup/", validateCreate, async (req, res) => {
                 user_firstname,
                 user_lastname,
                 user_email, 
+                user_province,
                 user_password: hash,
                 user_phonenumber,
                 role_id
@@ -213,40 +214,37 @@ userRouter.get("/users/role/:id", async (req, res) => {
 
 
 //actualizacion de los datos de un usuario
-userRouter.post("/users/update/:id", async(req, res) => {
+userRouter.post("/users/update/:id", async (req, res) => {
     try {
-
         const { id } = req.params;
 
-        
-        bcrypt.genSalt(10, function(err, salt){
-            bcrypt.hash(req.body.user_password, salt, function(err, hash){
+        // Obtener los datos actuales del usuario desde la base de datos
+        const [currentUser] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
 
-                const newusers = ({ 
-                    "user_firstname":req.body.user_firstname,
-                    "user_lastname":req.body.user_lastname, 
-                    "user_email":req.body.user_email, 
-                    "user_phonenumber":req.body.user_phonenumber ,
-                    "role_id":req.body.role_id 
-                    })
+        if (!currentUser) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
 
-                
-                if (!newusers){
-                        res.status(401).send("Por favor ingrese todos los datos del usuario")
-                }
+        // Construir el objeto con los datos actualizados, manteniendo los valores existentes
+        const updatedUser = {
+            user_firstname: req.body.user_firstname || currentUser.user_firstname,
+            user_lastname: req.body.user_lastname || currentUser.user_lastname,
+            user_email: req.body.user_email || currentUser.user_email,
+            user_province: req.body.user_province || currentUser.user_province,
+            user_phonenumber: req.body.user_phonenumber || currentUser.user_phonenumber,
+            role_id: req.body.role_id || currentUser.role_id
+        };
+
         
-                const result = pool.query("UPDATE users set ? WHERE id = ?", [newusers, id])
-        
-                res.json({updated: true, result}); 
-                
-            });
-        });
+        // Actualizar en la base de datos solo los campos modificados
+        await pool.query("UPDATE users SET ? WHERE id = ?", [updatedUser, id]);
+
+        res.json({ updated: true, message: "Usuario actualizado correctamente" });
 
     } catch (error) {
-        res.status(500);
-        res.send(error.message);
+        res.status(500).json({ error: error.message });
     }
-})
+});
 
 
 // delete users
