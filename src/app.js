@@ -12,7 +12,7 @@ import rolesRouter from "./routes/Roles/rolesRoutes.js";
 import provincesRouter from "./routes/Provinces/provincesRoutes.js";
 import shipmentRouter from "./routes/Shipments/shipmentsRoutes.js";
 import calculatorRouter from "./routes/Calculator/calculator.js";
-
+import addressRouter from "./routes/Address/address.js";
 
 dotenv.config()
 
@@ -54,6 +54,7 @@ expressApp.use("/users", userRouter);
 expressApp.use("/roles", rolesRouter);
 expressApp.use("/provinces", provincesRouter);
 expressApp.use("/shipments", shipmentRouter);
+expressApp.use("/address", addressRouter);
 expressApp.use("/api", calculatorRouter);
 
 

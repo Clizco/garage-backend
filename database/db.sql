@@ -32,6 +32,7 @@ CREATE TABLE provinces (
     created_at VARCHAR(45) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+
 CREATE TABLE shipment (
     id INT AUTO_INCREMENT PRIMARY KEY,
     shipment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -53,6 +54,19 @@ CREATE TABLE status (
     status_name VARCHAR(45) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
+
+CREATE TABLE address (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    address_person_fullname VARCHAR(45) NOT NULL,
+    address_phonenumber VARCHAR(45) NOT NULL,
+    address_details VARCHAR(45) NOT NULL,
+    address_province INT NOT  NULL,
+    address_user INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (address_province) REFERENCES provinces(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (address_user) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 -- Accediendo a la tablas --
 use users;
 use roles;
