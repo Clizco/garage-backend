@@ -62,12 +62,28 @@ userRouter.get("/users/:id", async (req, res) => {
     }
 });
 
+userRouter.get("/users/user/:user_unique_id", async (req, res) => {
+    try {
+        const userId = req.params.user_unique_id;
+        const [results] = await pool.query("SELECT * FROM users WHERE user_unique_id = ?", [userId]);
 
+        if (results.length > 0) {
+            return res.status(200).json(results[0]);
+        } else {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Error del servidor" });
+    }
+}
+);
+    
 
 //se encarga de crear los usuarios
 userRouter.post("/signup/", validateCreate, async (req, res) => {
         try {
-            const { user_firstname, user_lastname, user_email, user_province, role_id, user_password, user_phonenumber } = req.body;
+            const { user_firstname, user_lastname, user_email, user_province, role_id, user_password, user_unique_id,  user_phonenumber } = req.body;
     
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(user_password, salt);
@@ -77,6 +93,7 @@ userRouter.post("/signup/", validateCreate, async (req, res) => {
                 user_lastname,
                 user_email, 
                 user_province,
+                user_unique_id,
                 user_password: hash,
                 user_phonenumber,
                 role_id
@@ -86,6 +103,8 @@ userRouter.post("/signup/", validateCreate, async (req, res) => {
             if (!newUser.user_email || !newUser.user_password ) {
                 return res.status(401).send("Por favor ingrese todos los datos del usuario");
             }
+
+            
     
             const result = await pool.query("INSERT INTO users SET ?", [newUser]);
             
@@ -245,6 +264,35 @@ userRouter.post("/users/update/:id", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+//actualizacion de la direccion de un usuario
+
+userRouter.put("/update/address/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { user_address } = req.body;
+  
+      if (!user_address) {
+        return res.status(400).json({ message: "La dirección es requerida" });
+      }
+  
+      const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+  
+      await pool.query("UPDATE users SET user_address = ? WHERE id = ?", [user_address, id]);
+  
+      res.json({ updated: true, message: "Dirección del usuario actualizada correctamente" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  
+  
 
 
 // delete users

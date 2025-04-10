@@ -49,6 +49,22 @@ shipmentRouter.get("/shipments/user/:user", async (req, res) => {
     }
 });
 
+shipmentRouter.get("/shipments/assigned/:user_email", async (req, res) => {
+    try {
+        const { user_email } = req.params;
+        const [rows] = await pool.query("SELECT * FROM shipment WHERE shipment_assigned_user = ?", [user_email]);
+        if (rows.length === 0) {
+            return res.status(404).json({ message: "No se encontraron envíos asignados a este usuario" });
+        }
+        return res.status(200).json(rows);
+    } catch (error) {
+        console.error("Error al obtener envíos asignados por usuario:", error);
+        return res.status(500).json({ error: 'Error al obtener envíos asignados por usuario' });
+    }
+}
+);
+    
+
 shipmentRouter.get("/shipments/province/:province", async (req, res) => {
     try {
         const { province } = req.params;
@@ -67,13 +83,13 @@ shipmentRouter.get("/shipments/province/:province", async (req, res) => {
 // Crear un nuevo envío
 shipmentRouter.post("/shipments/create", async (req, res) => {
     try {
-        const { shipment_status, shipment_origin, shipment_destination, shipment_sender_name, shipment_sender_phonenumber, shipment_receiver_name, shipment_receiver_phonenumber, shipment_description, shipment_user, shipment_code } = req.body;
+        const { shipment_status, shipment_origin, shipment_destination, shipment_sender_name, shipment_sender_phonenumber, shipment_receiver_name, shipment_assigned_user, shipment_receiver_phonenumber, shipment_description, shipment_user, shipment_code } = req.body;
 
-        if (!shipment_status || !shipment_origin || !shipment_destination || !shipment_sender_name || !shipment_sender_phonenumber || !shipment_receiver_name || !shipment_receiver_phonenumber || !shipment_description || !shipment_user ||  !shipment_code) {
+        if (!shipment_status || !shipment_origin || !shipment_destination || !shipment_assigned_user || !shipment_sender_name || !shipment_sender_phonenumber || !shipment_receiver_name || !shipment_receiver_phonenumber || !shipment_description || !shipment_user ||  !shipment_code) {
             return res.status(400).send("Por favor, proporciona todos los datos requeridos para el envío.");
         }
 
-        const newShipment = { shipment_status, shipment_origin, shipment_destination, shipment_sender_name, shipment_sender_phonenumber, shipment_receiver_name, shipment_receiver_phonenumber, shipment_description, shipment_user, shipment_code };
+        const newShipment = { shipment_status, shipment_origin, shipment_destination, shipment_assigned_user, shipment_sender_name, shipment_sender_phonenumber, shipment_receiver_name, shipment_receiver_phonenumber, shipment_description, shipment_user, shipment_code };
         const result = await pool.query("INSERT INTO shipment SET ?", [newShipment]);
         const shipmentId = result[0].insertId;
 

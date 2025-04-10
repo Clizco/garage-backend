@@ -20,10 +20,14 @@ CREATE TABLE users (
     user_province INT NOT NULL,
     user_password VARCHAR(60) NOT NULL,
     user_phonenumber VARCHAR(45) NOT NULL UNIQUE,
+    user_unique_id VARCHAR(45) NOT NULL UNIQUE,
+    user_address INT,
     role_id INT,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_province) REFERENCES provinces(id) ON DELETE CASCADE ON UPDATE CASCADE
+    FOREIGN KEY (user_province) REFERENCES provinces(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (user_address) REFERENCES address(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+
 
 
 CREATE TABLE provinces (
@@ -45,6 +49,7 @@ CREATE TABLE shipment (
     shipment_receiver_phonenumber VARCHAR(45) NOT NULL,
     shipment_description VARCHAR(255) NOT NULL,
     shipment_code VARCHAR(45) NOT NULL UNIQUE,
+    shipment_assigned_user VARCHAR (45),
     shipment_user INT NOT NULL,
     FOREIGN KEY (shipment_user) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
