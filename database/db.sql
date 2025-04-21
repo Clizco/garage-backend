@@ -72,6 +72,18 @@ CREATE TABLE address (
     FOREIGN KEY (address_user) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE driver (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    driver_name VARCHAR(45) NOT NULL,
+    driver_phonenumber VARCHAR(45) NOT NULL UNIQUE,
+    driver_email VARCHAR(45) NOT NULL UNIQUE,
+    driver_password VARCHAR(60) NOT NULL,
+    driver_province INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (driver_province) REFERENCES provinces(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 -- Accediendo a la tablas --
 use users;
 use roles;

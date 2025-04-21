@@ -13,6 +13,7 @@ import provincesRouter from "./routes/Provinces/provincesRoutes.js";
 import shipmentRouter from "./routes/Shipments/shipmentsRoutes.js";
 import calculatorRouter from "./routes/Calculator/calculator.js";
 import addressRouter from "./routes/Address/address.js";
+import driverRouter from "./routes/Drivers/driversRoutes.js";
 
 dotenv.config()
 
@@ -56,7 +57,7 @@ expressApp.use("/provinces", provincesRouter);
 expressApp.use("/shipments", shipmentRouter);
 expressApp.use("/address", addressRouter);
 expressApp.use("/api", calculatorRouter);
-
+expressApp.use("/drivers", driverRouter);
 
 // starting the server
 export default expressApp;
