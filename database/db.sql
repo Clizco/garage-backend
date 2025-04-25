@@ -41,15 +41,15 @@ CREATE TABLE shipment (
     id INT AUTO_INCREMENT PRIMARY KEY,
     shipment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     shipment_status VARCHAR(45) NOT NULL,
-    shipment_origin VARCHAR(45) NOT NULL,
-    shipment_destination VARCHAR(45) NOT NULL,
+    shipment_origin INT NOT NULL,
+    shipment_destination INT NOT NULL,
     shipment_sender_name VARCHAR(45) NOT NULL,
     shipment_sender_phonenumber VARCHAR(45) NOT NULL,
     shipment_receiver_name VARCHAR(45) NOT NULL,
     shipment_receiver_phonenumber VARCHAR(45) NOT NULL,
     shipment_description VARCHAR(255) NOT NULL,
     shipment_code VARCHAR(45) NOT NULL UNIQUE,
-    shipment_assigned_user VARCHAR (45),
+    shipment_assigned_user VARCHAR (45), 
     shipment_user INT NOT NULL,
     FOREIGN KEY (shipment_user) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -79,6 +79,7 @@ CREATE TABLE driver (
     driver_email VARCHAR(45) NOT NULL UNIQUE,
     driver_password VARCHAR(60) NOT NULL,
     driver_province INT NOT NULL,
+    role_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (driver_province) REFERENCES provinces(id) ON DELETE CASCADE ON UPDATE CASCADE

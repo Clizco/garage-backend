@@ -48,6 +48,40 @@ driverRouter.get("/drivers/:id", async (req, res) => {
     }
 });
 
+driverRouter.get("/drivers/role/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      // Consulta para obtener el nombre del rol del driver
+      const [rows] = await pool.query(
+        `SELECT roles.role_name 
+         FROM driver 
+         JOIN roles ON driver.role_id = roles.id 
+         WHERE driver.id = ?`,
+        [id]
+      );
+  
+      // Verificar si se encontró un driver con el ID dado
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Conductor no encontrado" });
+      }
+  
+      const driverRole = rows[0].role_name;
+      console.log("Rol del conductor:", driverRole);
+  
+      // Verificar si el rol es "driver" o "admin"
+      if (driverRole === "driver" || driverRole === "admin") {
+        return res.status(200).json({ message: "Acceso permitido", role: driverRole });
+      } else {
+        return res.status(403).json({ error: "Acceso denegado" });
+      }
+    } catch (error) {
+      console.error("Error al obtener el rol del conductor:", error);
+      return res.status(500).json({ error: "Error al obtener el rol del conductor" });
+    }
+  });
+
+
 driverRouter.post("/signup/", validateCreate, async (req, res) => {
     try {
         const { driver_name, driver_email, driver_phonenumber, driver_password, driver_province } = req.body;
@@ -59,6 +93,7 @@ driverRouter.post("/signup/", validateCreate, async (req, res) => {
             driver_name,
             driver_email,
             driver_phonenumber,
+            role_id: 3,
             driver_password: hash,
             driver_province
         };

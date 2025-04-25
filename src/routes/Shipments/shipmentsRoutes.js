@@ -65,7 +65,7 @@ shipmentRouter.get("/shipments/assigned/:user_email", async (req, res) => {
 );
     
 
-shipmentRouter.get("/shipments/province/:province", async (req, res) => {
+shipmentRouter.get("/shipments/province/:id", async (req, res) => {
     try {
         const { province } = req.params;
         const [rows] = await pool.query("SELECT * FROM shipment WHERE shipment_destination = ?", [province]);
@@ -80,25 +80,66 @@ shipmentRouter.get("/shipments/province/:province", async (req, res) => {
 }
 );
 
-// Crear un nuevo envío
 shipmentRouter.post("/shipments/create", async (req, res) => {
     try {
-        const { shipment_status, shipment_origin, shipment_destination, shipment_sender_name, shipment_sender_phonenumber, shipment_receiver_name, shipment_assigned_user, shipment_receiver_phonenumber, shipment_description, shipment_user, shipment_code } = req.body;
-
-        if (!shipment_status || !shipment_origin || !shipment_destination || !shipment_assigned_user || !shipment_sender_name || !shipment_sender_phonenumber || !shipment_receiver_name || !shipment_receiver_phonenumber || !shipment_description || !shipment_user ||  !shipment_code) {
-            return res.status(400).send("Por favor, proporciona todos los datos requeridos para el envío.");
-        }
-
-        const newShipment = { shipment_status, shipment_origin, shipment_destination, shipment_assigned_user, shipment_sender_name, shipment_sender_phonenumber, shipment_receiver_name, shipment_receiver_phonenumber, shipment_description, shipment_user, shipment_code };
-        const result = await pool.query("INSERT INTO shipment SET ?", [newShipment]);
-        const shipmentId = result[0].insertId;
-
-        return res.status(200).json({ message: "Envío creado exitosamente", shipmentId });
+      const {
+        shipment_status,
+        shipment_origin,
+        shipment_destination,
+        shipment_sender_name,
+        shipment_sender_phonenumber,
+        shipment_receiver_name,
+        shipment_receiver_phonenumber,
+        shipment_description,
+        shipment_code,
+        shipment_assigned_user,
+        shipment_user
+      } = req.body;
+  
+      // Validar campos requeridos
+      if (
+        !shipment_status ||
+        !shipment_origin ||
+        !shipment_destination ||
+        !shipment_sender_name ||
+        !shipment_sender_phonenumber ||
+        !shipment_receiver_name ||
+        !shipment_receiver_phonenumber ||
+        !shipment_description ||
+        !shipment_code ||
+        !shipment_user
+      ) {
+        return res.status(400).json({
+          error: "Por favor, proporciona todos los datos requeridos para el envío."
+        });
+      }
+  
+      const newShipment = {
+        shipment_status,
+        shipment_origin, // asegúrate de que tu tabla use este nombre y no `shipmet_orign`
+        shipment_destination,
+        shipment_sender_name,
+        shipment_sender_phonenumber,
+        shipment_receiver_name,
+        shipment_receiver_phonenumber,
+        shipment_description,
+        shipment_code,
+        shipment_assigned_user: shipment_assigned_user || null, // puede ser null
+        shipment_user
+      };
+  
+      const [result] = await pool.query("INSERT INTO shipment SET ?", [newShipment]);
+  
+      return res.status(200).json({
+        message: "Envío creado exitosamente",
+        shipmentId: result.insertId
+      });
     } catch (error) {
-        console.error("Error al crear envío:", error);
-        return res.status(500).json({ error: 'Error al crear envío' });
+      console.error("Error al crear envío:", error);
+      return res.status(500).json({ error: "Error al crear envío" });
     }
-});
+  });
+  
 
 // Actualizar un envío
 shipmentRouter.put("/update/:id", async (req, res) => {

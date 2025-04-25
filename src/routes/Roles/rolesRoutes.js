@@ -20,6 +20,22 @@ rolesRouter.get("/roles/all", async (req, res) => {
         return res.status(500).json({ error: 'Error retrieving roles' });
     }
 });
+ 
+rolesRouter.get("/roles/:id", async (req, res) => {
+    try {
+        const id = req.params.id;
+        const [results] = await pool.query("SELECT * FROM roles WHERE role_id = ?", [id]);
+        if (results.length > 0) {
+            return res.status(200).json(results[0]);
+        } else {
+            return res.status(404).json({ message: "Role not found" });
+        }
+    } catch (error) {
+        console.error("Error retrieving role:", error);
+        return res.status(500).json({ message: "Error retrieving role" });
+    }
+}
+);
 
 // Create a new role
 rolesRouter.post("/create", async (req, res) => {
