@@ -22,6 +22,7 @@ CREATE TABLE users (
     user_phonenumber VARCHAR(45) NOT NULL UNIQUE,
     user_unique_id VARCHAR(45) NOT NULL UNIQUE,
     user_address INT,
+    user_prefix VARCHAR(45) NOT NULL UNIQUE,
     role_id INT,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_province) REFERENCES provinces(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -63,8 +64,9 @@ CREATE TABLE status (
 CREATE TABLE address (
     id INT AUTO_INCREMENT PRIMARY KEY,
     address_person_fullname VARCHAR(45) NOT NULL,
+    address_nickname VARCHAR(45) NOT NULL,
     address_phonenumber VARCHAR(45) NOT NULL,
-    address_details VARCHAR(45) NOT NULL,
+    address_details VARCHAR(255) NOT NULL,
     address_province INT NOT  NULL,
     address_user INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,6 +85,29 @@ CREATE TABLE driver (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (driver_province) REFERENCES provinces(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE packages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    package_weight VARCHAR(45) NOT NULL,
+    package_description VARCHAR(255) NOT NULL,
+    package_value VARCHAR(45) NOT NULL,
+    package_store VARCHAR(45) NOT NULL,
+    package_status VARCHAR(45) NOT NULL,
+    package_tracking_id VARCHAR(45) NOT NULL UNIQUE,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_invoices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    package_id INT NOT NULL,
+    invoice_path VARCHAR(255) NOT NULL,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE CASCADE
 );
 
 -- Accediendo a la tablas --

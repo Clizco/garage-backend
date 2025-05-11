@@ -81,43 +81,85 @@ userRouter.get("/users/user/:user_unique_id", async (req, res) => {
     
 
 //se encarga de crear los usuarios
+// se encarga de crear los usuarios
 userRouter.post("/signup/", validateCreate, async (req, res) => {
-        try {
-            const { user_firstname, user_lastname, user_email, user_province, role_id, user_password, user_unique_id,  user_phonenumber } = req.body;
-    
-            const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash(user_password, salt);
-    
-            const newUser = { 
-                user_firstname,
-                user_lastname,
-                user_email, 
-                user_province,
-                user_unique_id,
-                user_password: hash,
-                user_phonenumber,
-                role_id
-                
-            };  
-    
-            if (!newUser.user_email || !newUser.user_password ) {
-                return res.status(401).send("Por favor ingrese todos los datos del usuario");
-            }
-
-            
-    
-            const result = await pool.query("INSERT INTO users SET ?", [newUser]);
-            
-            const token = jwt.sign({ id: result.insertId }, config.secret, {
-                expiresIn: 60 * 60 * 24
-            });
-    
-            res.json({ auth: true, result, token }); 
-        } catch (error) {
-            console.error(error);
-            res.status(500).send(error.message);
+    try {
+      const {
+        user_firstname,
+        user_lastname,
+        user_email,
+        user_province,
+        role_id,
+        user_password,
+        user_unique_id,
+        user_phonenumber
+      } = req.body;
+  
+      if (!user_email || !user_password) {
+        return res.status(400).send("Por favor ingrese todos los datos del usuario");
+      }
+  
+      // Generar hash de contraseña
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(user_password, salt);
+  
+      // Función para generar prefijo único
+      async function generateUniquePrefix() {
+        let prefix, exists;
+        do {
+          const randomNum = Math.floor(1000 + Math.random() * 9000);
+          prefix = `GET-${randomNum}`;
+          const [rows] = await pool.query("SELECT id FROM users WHERE user_prefix = ?", [prefix]);
+          exists = rows.length > 0;
+        } while (exists);
+        return prefix;
+      }
+  
+      // Generar el prefijo y construir el nuevo usuario
+      const user_prefix = await generateUniquePrefix();
+  
+      const newUser = {
+        user_firstname,
+        user_lastname,
+        user_email,
+        user_province,
+        user_unique_id,
+        user_password: hash,
+        user_phonenumber,
+        role_id,
+        user_prefix // ← aquí se incluye
+      };
+  
+      const [result] = await pool.query("INSERT INTO users SET ?", [newUser]);
+  
+      // Generar token
+      const token = jwt.sign({ id: result.insertId }, config.secret, {
+        expiresIn: 60 * 60 * 24
+      });
+  
+      res.status(201).json({
+        auth: true,
+        user_prefix,
+        result,
+        token
+      });
+    } catch (error) {
+      console.error(error);
+  
+      if (error.code === "ER_DUP_ENTRY") {
+        if (error.message.includes("user_email")) {
+          return res.status(400).json({ message: "Este correo ya está registrado." });
         }
-    });
+        if (error.message.includes("user_phonenumber")) {
+          return res.status(400).json({ message: "Este número de teléfono ya está registrado." });
+        }
+        return res.status(400).json({ message: "El dato ya está registrado." });
+      }
+  
+      res.status(500).json({ message: "Error interno del servidor." });
+    }
+  });
+  
 
 
 

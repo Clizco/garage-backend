@@ -21,6 +21,23 @@ provincesRouter.get("/provinces/all", async (req, res) => {
     }
 });
 
+// Obtener una provincia por ID
+provincesRouter.get("/provinces/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await pool.query("SELECT * FROM provinces WHERE id = ?", [id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: "Provincia no encontrada" });
+        }
+
+        return res.status(200).json(rows[0]);
+    } catch (error) {
+        console.error("Error al obtener provincia:", error);
+        return res.status(500).json({ error: 'Error al obtener provincia' });
+    }
+});
+
 // Crear una nueva provincia
 provincesRouter.post("/create", async (req, res) => {
     try {

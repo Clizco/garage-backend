@@ -14,6 +14,8 @@ import shipmentRouter from "./routes/Shipments/shipmentsRoutes.js";
 import calculatorRouter from "./routes/Calculator/calculator.js";
 import addressRouter from "./routes/Address/address.js";
 import driverRouter from "./routes/Drivers/driversRoutes.js";
+import packageRouter from "./routes/Packages/packagesRoutes.js";
+import packageInvoiceRouter from "./routes/Packages/packageInvoiceRoutes.js";
 
 dotenv.config()
 
@@ -48,7 +50,11 @@ expressApp.use(cors());
 
 // static files
 expressApp.use(express.static(path.join(__dirname, 'public')));
-expressApp.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
+const uploadsPath = path.resolve(__dirname, '../uploads').replace(/\\/g, '/');
+console.log('🛠️ Serving static from:', uploadsPath);
+expressApp.use('/uploads', express.static(uploadsPath));
+
+
 
 // routes
 expressApp.use("/users", userRouter);
@@ -57,7 +63,9 @@ expressApp.use("/provinces", provincesRouter);
 expressApp.use("/shipments", shipmentRouter);
 expressApp.use("/address", addressRouter);
 expressApp.use("/api", calculatorRouter);
-expressApp.use("/drivers", driverRouter);
+expressApp.use("/drivers", driverRouter); 
+expressApp.use("/packages", packageRouter);
+expressApp.use("/invoices", packageInvoiceRouter);
 
 // starting the server
 export default expressApp;

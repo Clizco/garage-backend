@@ -64,6 +64,21 @@ shipmentRouter.get("/shipments/assigned/:user_email", async (req, res) => {
 }
 );
     
+shipmentRouter.get("/shipments/recieved/:user_email", async (req, res) => {
+   try {
+        const { user_email } = req.params;
+        const [rows] = await pool.query("SELECT * FROM shipment WHERE shipment_assigned_user", [user_email]);
+        if (rows.length === 0) {
+            return res.status(404).json({ message: "No se encontraron envíos recibidos por este usuario" });
+        }
+        return res.status(200).json(rows);
+    }
+    catch (error) {
+        console.error("Error al obtener envíos recibidos por usuario:", error);
+        return res.status(500).json({ error: 'Error al obtener envíos recibidos por usuario' });
+    }
+}
+);
 
 shipmentRouter.get("/shipments/province/:id", async (req, res) => {
     try {
