@@ -62,6 +62,53 @@ userRouter.get("/users/:id", async (req, res) => {
     }
 });
 
+userRouter.put("/users/update/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        user_firstname,
+        user_lastname,
+        user_email,
+        user_phonenumber,
+        user_prefix,
+        user_province,
+        role_id,
+      } = req.body;
+  
+      const [result] = await pool.query(
+        `UPDATE users SET 
+          user_firstname = ?, 
+          user_lastname = ?, 
+          user_email = ?, 
+          user_phonenumber = ?, 
+          user_prefix = ?, 
+          user_province = ?, 
+          role_id = ? 
+        WHERE id = ?`,
+        [
+          user_firstname,
+          user_lastname,
+          user_email,
+          user_phonenumber,
+          user_prefix,
+          user_province,
+          role_id,
+          id,
+        ]
+      );
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+  
+      return res.status(200).json({ message: "Usuario actualizado correctamente" });
+    } catch (error) {
+      console.error("Error al actualizar el usuario:", error);
+      return res.status(500).json({ message: "Error del servidor" });
+    }
+  });
+  
+
 userRouter.get("/users/user/:user_unique_id", async (req, res) => {
     try {
         const userId = req.params.user_unique_id;

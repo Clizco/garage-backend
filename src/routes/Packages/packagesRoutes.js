@@ -92,6 +92,156 @@ packageRouter.get("/packages/all", async (req, res) => {
 });
 
 
+packageRouter.put(
+  "/packages/update/:id",
+  setUserInvoiceFolder,
+  (req, res, next) => {
+    upload.single("invoice")(req, res, function (err) {
+      if (err) {
+        const msg = err instanceof multer.MulterError ? "Archivo muy grande (máx. 2MB)." : err.message;
+        return res.status(400).json({ error: msg });
+      }
+      next();
+    });
+  },
+  async (req, res) => {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const { id } = req.params;
+      const user_id = req.userIdFromHeader;
+      const { trackingId, products } = req.body;
+
+      if (!user_id || !trackingId || !products) {
+        return res.status(400).json({ error: "Faltan datos." });
+      }
+
+      const parsedProducts = JSON.parse(products);
+      if (!Array.isArray(parsedProducts) || !parsedProducts.length) {
+        return res.status(400).json({ error: "Lista de productos inválida." });
+      }
+
+      const [[existing]] = await connection.query(
+        "SELECT * FROM packages WHERE id = ? AND user_id = ?",
+        [id, user_id]
+      );
+      if (!existing) {
+        await connection.rollback();
+        return res.status(404).json({ error: "Paquete no encontrado." });
+      }
+
+      // Verificar que el tracking ID no esté repetido (excluyendo este paquete)
+      const [[duplicateTracking]] = await connection.query(
+        "SELECT id FROM packages WHERE package_tracking_id = ? AND id != ?",
+        [trackingId, id]
+      );
+      if (duplicateTracking) {
+        await connection.rollback();
+        return res.status(400).json({ error: "Ese Tracking ID ya está en uso." });
+      }
+
+      // Actualizar paquete
+      await connection.query(
+        "UPDATE packages SET package_tracking_id = ? WHERE id = ?",
+        [trackingId, id]
+      );
+
+      // Obtener productos actuales
+      const [existingProducts] = await connection.query(
+        "SELECT * FROM package_products WHERE package_id = ?",
+        [id]
+      );
+
+      // Actualizar o insertar productos
+      for (let i = 0; i < parsedProducts.length; i++) {
+        const { weight, unit, description, value, store } = parsedProducts[i];
+        if (!weight || !unit || !description || !value || !store) {
+          await connection.rollback();
+          return res.status(400).json({ error: "Faltan datos de producto." });
+        }
+
+        const existing = existingProducts[i];
+        if (existing) {
+          await connection.query(
+            `UPDATE package_products
+             SET product_weight = ?, product_unit = ?, product_description = ?, product_value = ?, product_store = ?
+             WHERE id = ?`,
+            [weight, unit, description, value, store, existing.id]
+          );
+        } else {
+          await connection.query(
+            `INSERT INTO package_products 
+             (package_id, product_weight, product_unit, product_description, product_value, product_store)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, weight, unit, description, value, store]
+          );
+        }
+      }
+
+      // Actualizar factura si se subió nueva
+      if (req.file) {
+        const invoice_path = `/uploads/invoices/${req.userUniqueId}/${req.file.filename}`;
+        const [[invoiceExists]] = await connection.query(
+          "SELECT * FROM package_invoices WHERE package_id = ?",
+          [id]
+        );
+
+        if (invoiceExists) {
+          await connection.query(
+            "UPDATE package_invoices SET invoice_path = ? WHERE package_id = ?",
+            [invoice_path, id]
+          );
+        } else {
+          await connection.query(
+            "INSERT INTO package_invoices (package_id, invoice_path, user_id) VALUES (?, ?, ?)",
+            [id, invoice_path, user_id]
+          );
+        }
+      }
+
+      await connection.commit();
+      connection.release();
+      return res.status(200).json({ message: "Paquete actualizado correctamente." });
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      console.error("Error al actualizar paquete:", error);
+      return res.status(500).json({ error: "Error interno al actualizar paquete." });
+    }
+  }
+);
+
+
+// GET: Obtener paquete individual con sus productos
+packageRouter.get("/packages/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [[pkg]] = await pool.query(`
+      SELECT p.*, pi.invoice_path
+      FROM packages p
+      LEFT JOIN package_invoices pi ON p.id = pi.package_id
+      WHERE p.id = ?
+    `, [id]);
+
+    if (!pkg) return res.status(404).json({ message: "Paquete no encontrado." });
+
+    const [products] = await pool.query(
+      `SELECT * FROM package_products WHERE package_id = ?`, [id]
+    );
+
+    return res.status(200).json({
+      ...pkg,
+      products,
+    });
+  } catch (err) {
+    console.error("Error en GET paquete individual:", err);
+    return res.status(500).json({ error: "Error al obtener paquete." });
+  }
+});
+
+
 
 // GET: Paquetes de un usuario con productos
 packageRouter.get("/packages/user/:user", async (req, res) => {

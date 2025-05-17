@@ -82,8 +82,8 @@ shipmentRouter.get("/shipments/recieved/:user_email", async (req, res) => {
 
 shipmentRouter.get("/shipments/province/:id", async (req, res) => {
     try {
-        const { province } = req.params;
-        const [rows] = await pool.query("SELECT * FROM shipment WHERE shipment_destination = ?", [province]);
+        const { id } = req.params;
+        const [rows] = await pool.query("SELECT * FROM shipment WHERE shipment_destination = ?", [id]);
         if (rows.length === 0) {
             return res.status(404).json({ message: "No se encontraron envíos para esta provincia" });
         }
@@ -92,8 +92,8 @@ shipmentRouter.get("/shipments/province/:id", async (req, res) => {
         console.error("Error al obtener envíos por provincia:", error);
         return res.status(500).json({ error: 'Error al obtener envíos por provincia' });
     }
-}
-);
+});
+
 
 shipmentRouter.post("/shipments/create", async (req, res) => {
     try {
