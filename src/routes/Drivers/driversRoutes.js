@@ -1,229 +1,213 @@
 import { Router } from "express";
-import { validateCreate } from "../../validators/drivers.js";
 import { pool } from "../../db.js";
-import jwt from "jsonwebtoken";
-import config from "../../config.js"
-import bcrypt from "bcrypt"
-import { jwtDecode } from "jwt-decode";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
-const driverRouter = Router();
+const driversRouter = Router();
 
-driverRouter.use((req, res, next) => {
-    console.log(req.ip);
-    next();
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = "uploads/drivers/tmp";
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
 });
 
-driverRouter.get("/:email", async (req, res) => {
-    try {
-        const email = req.params.email;
-        const [results] = await pool.query("SELECT * FROM driver WHERE driver_email = ?", [email]);
-        return res.status(200).json(results);
-    } catch (error) {
-        console.error(error);
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Solo se permiten archivos PDF'));
     }
+    cb(null, true);
+  }
 });
 
-driverRouter.get("/drivers/all", async (req, res) => {
-    try {
-        const [rows] = await pool.query("SELECT * FROM driver");
-        return res.status(200).json(rows);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Error al obtener conductores' });
-    }
+// Obtener todos los conductores
+driversRouter.get("/drivers/all", async (_, res) => {
+  try {
+    const [drivers] = await pool.query("SELECT * FROM drivers");
+    res.json(drivers);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener conductores" });
+  }
 });
 
-driverRouter.get("/drivers/:id", async (req, res) => {
-    try {
-        const id = req.params.id;
-        const [results] = await pool.query("SELECT * FROM driver WHERE id = ?", [id]);
-        if (results.length > 0) {
-            return res.status(200).json(results[0]);
-        } else {
-            return res.status(404).json({ message: "Conductor no encontrado" });
-        }
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: "Error del servidor" });
-    }
+// Obtener conductor por ID
+driversRouter.get("/drivers/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [results] = await pool.query("SELECT * FROM drivers WHERE id = ?", [id]);
+    if (results.length === 0) return res.status(404).json({ message: "Conductor no encontrado" });
+    res.json(results[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener conductor" });
+  }
 });
 
-driverRouter.get("/drivers/role/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-  
-      // Consulta para obtener el nombre del rol del driver
-      const [rows] = await pool.query(
-        `SELECT roles.role_name 
-         FROM driver 
-         JOIN roles ON driver.role_id = roles.id 
-         WHERE driver.id = ?`,
-        [id]
-      );
-  
-      // Verificar si se encontró un driver con el ID dado
-      if (rows.length === 0) {
-        return res.status(404).json({ error: "Conductor no encontrado" });
-      }
-  
-      const driverRole = rows[0].role_name;
-      console.log("Rol del conductor:", driverRole);
-  
-      // Verificar si el rol es "driver" o "admin"
-      if (driverRole === "driver" || driverRole === "admin") {
-        return res.status(200).json({ message: "Acceso permitido", role: driverRole });
-      } else {
-        return res.status(403).json({ error: "Acceso denegado" });
-      }
-    } catch (error) {
-      console.error("Error al obtener el rol del conductor:", error);
-      return res.status(500).json({ error: "Error al obtener el rol del conductor" });
+// Crear conductor
+driversRouter.post("/drivers/create", upload.fields([
+  { name: 'driver_license_file', maxCount: 1 },
+  { name: 'driver_identification_file', maxCount: 1 }
+]), async (req, res) => {
+  const {
+    driver_name,
+    driver_lastname,
+    driver_identification_type,
+    driver_identification,
+    driver_email,
+    driver_phone,
+    driver_license_type,
+    driver_nationality,
+    driver_birthdate,
+    driver_license_issue_date,
+    driver_license_expiration_date,
+    driver_control_number
+  } = req.body;
+
+  if (
+    !driver_name || !driver_lastname || !driver_identification_type ||
+    !driver_identification || !driver_email || !driver_phone ||
+    !driver_license_type || !driver_nationality ||
+    !driver_birthdate || !driver_license_issue_date || !driver_license_expiration_date ||
+    !driver_control_number || !req.files?.driver_license_file || !req.files?.driver_identification_file
+  ) {
+    return res.status(400).json({ message: "Todos los campos son obligatorios" });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO drivers (
+        driver_name, driver_lastname, driver_identification_type, driver_identification,
+        driver_email, driver_phone, driver_license_type, driver_nationality,
+        driver_birthdate, driver_license_issue_date, driver_license_expiration_date, driver_control_number
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        driver_name, driver_lastname, driver_identification_type, driver_identification,
+        driver_email, driver_phone, driver_license_type, driver_nationality,
+        driver_birthdate, driver_license_issue_date, driver_license_expiration_date, driver_control_number
+      ]
+    );
+
+    const driverId = result.insertId;
+    const driverDir = `uploads/drivers/${driverId}`;
+    fs.mkdirSync(driverDir, { recursive: true });
+
+    const licenseFile = req.files.driver_license_file[0];
+    const licensePath = `${driverDir}/license.pdf`;
+    fs.renameSync(licenseFile.path, licensePath);
+
+    const idFile = req.files.driver_identification_file[0];
+    const idPath = `${driverDir}/identification.pdf`;
+    fs.renameSync(idFile.path, idPath);
+
+    await pool.query(
+      `UPDATE drivers SET driver_license_file = ?, driver_identification_file = ? WHERE id = ?`,
+      [licensePath, idPath, driverId]
+    );
+
+    res.status(201).json({ message: "Conductor creado correctamente", id: driverId });
+  } catch (error) {
+    console.error(error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ message: "Identificación, correo, teléfono, tipo o control ya existen" });
     }
-  });
-
-
-driverRouter.post("/signup/", validateCreate, async (req, res) => {
-    try {
-        const { driver_name, driver_email, driver_phonenumber, driver_password, driver_province } = req.body;
-
-        const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash(driver_password, salt);
-
-        const newDriver = {
-            driver_name,
-            driver_email,
-            driver_phonenumber,
-            role_id: 3,
-            driver_password: hash,
-            driver_province
-        };
-
-        if (!newDriver.driver_email || !newDriver.driver_password) {
-            return res.status(401).send("Por favor ingrese todos los datos del conductor");
-        }
-
-        const result = await pool.query("INSERT INTO driver SET ?", [newDriver]);
-        const token = jwt.sign({ id: result.insertId }, config.secret, { expiresIn: 60 * 60 * 24 });
-
-        res.json({ auth: true, result, token });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send(error.message);
-    }
+    res.status(500).json({ message: "Error al crear el conductor" });
+  }
 });
 
-driverRouter.post("/signin/", async (req, res) => {
-    try {
-        const email = req.body.driver_email;
-        const password = req.body.driver_password;
-        const [currentDriver] = await pool.query("SELECT * FROM driver WHERE driver_email = ?", [email]);
-        const driver = currentDriver[0];
+// Actualizar conductor
+driversRouter.put("/drivers/update/:id", upload.fields([
+  { name: 'driver_license_file', maxCount: 1 },
+  { name: 'driver_identification_file', maxCount: 1 }
+]), async (req, res) => {
+  const { id } = req.params;
+  const {
+    driver_name,
+    driver_lastname,
+    driver_identification_type,
+    driver_identification,
+    driver_email,
+    driver_phone,
+    driver_license_type,
+    driver_nationality,
+    driver_birthdate,
+    driver_license_issue_date,
+    driver_license_expiration_date,
+    driver_control_number
+  } = req.body;
 
-        if (!email) return res.status(401).send("Falta el correo !!");
-        if (!password) return res.status(401).send("Falta la contrasena !!");
-        if (!driver) return res.status(401).send("El conductor no está registrado, por favor regístrese");
+  if (
+    !driver_name || !driver_lastname || !driver_identification_type ||
+    !driver_identification || !driver_email || !driver_phone ||
+    !driver_license_type || !driver_nationality ||
+    !driver_birthdate || !driver_license_issue_date || !driver_license_expiration_date ||
+    !driver_control_number
+  ) {
+    return res.status(400).json({ message: "Todos los campos son obligatorios" });
+  }
 
-        const result = bcrypt.compareSync(password, driver.driver_password);
-        if (!result) {
-            return res.status(401).send({ auth: result, message: "La contraseña es incorrecta" });
-        } else {
-            const token = jwt.sign({ id: driver.id, email: driver.driver_email }, config.secret, { expiresIn: 60 * 60 * 24 });
-            const decode = jwtDecode(token);
-            res.json({ auth: result, message: `Bienvenido ${email}`, token, decode });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).send("Error interno del servidor");
+  try {
+    await pool.query(
+      `UPDATE drivers SET
+        driver_name = ?, driver_lastname = ?, driver_identification_type = ?, driver_identification = ?,
+        driver_email = ?, driver_phone = ?, driver_license_type = ?,
+        driver_nationality = ?, driver_birthdate = ?, driver_license_issue_date = ?,
+        driver_license_expiration_date = ?, driver_control_number = ?
+      WHERE id = ?`,
+      [
+        driver_name, driver_lastname, driver_identification_type, driver_identification,
+        driver_email, driver_phone, driver_license_type,
+        driver_nationality, driver_birthdate, driver_license_issue_date,
+        driver_license_expiration_date, driver_control_number, id
+      ]
+    );
+
+    const driverDir = `uploads/drivers/${id}`;
+    fs.mkdirSync(driverDir, { recursive: true });
+
+    if (req.files.driver_license_file) {
+      const licenseFile = req.files.driver_license_file[0];
+      const licensePath = `${driverDir}/license.pdf`;
+      fs.renameSync(licenseFile.path, licensePath);
+      await pool.query(`UPDATE drivers SET driver_license_file = ? WHERE id = ?`, [licensePath, id]);
     }
+
+    if (req.files.driver_identification_file) {
+      const idFile = req.files.driver_identification_file[0];
+      const idPath = `${driverDir}/identification.pdf`;
+      fs.renameSync(idFile.path, idPath);
+      await pool.query(`UPDATE drivers SET driver_identification_file = ? WHERE id = ?`, [idPath, id]);
+    }
+
+    res.json({ message: "Conductor actualizado correctamente" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al actualizar el conductor" });
+  }
 });
 
-driverRouter.get("/driver/token/", async (req, res) => {
-    const token = req.headers['x-access-token'];
-    if (!token) {
-        return res.status(401).json({ auth: false, message: 'No token provided' });
+// Eliminar conductor
+driversRouter.delete("/drivers/delete/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await pool.query("DELETE FROM drivers WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Conductor no encontrado" });
     }
 
-    try {
-        const decoded = jwt.verify(token, config.secret);
-        const [rows] = await pool.execute('SELECT * FROM driver WHERE id = ?', [decoded.id]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ message: 'Conductor no encontrado' });
-        }
-
-        const driver = rows[0];
-        delete driver.password;
-
-        res.json(driver);
-    } catch (err) {
-        return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
-    }
+    res.json({ message: "Conductor eliminado correctamente" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al eliminar el conductor" });
+  }
 });
 
-driverRouter.post("/drivers/update/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const [currentDriver] = await pool.query("SELECT * FROM driver WHERE id = ?", [id]);
-
-        if (!currentDriver.length) {
-            return res.status(404).json({ message: "Conductor no encontrado" });
-        }
-
-        const updatedDriver = {
-            driver_name: req.body.driver_name || currentDriver[0].driver_name,
-            driver_email: req.body.driver_email || currentDriver[0].driver_email,
-            driver_province: req.body.driver_province || currentDriver[0].driver_province,
-            driver_phonenumber: req.body.driver_phonenumber || currentDriver[0].driver_phonenumber
-        };
-
-        await pool.query("UPDATE driver SET ? WHERE id = ?", [updatedDriver, id]);
-        res.json({ updated: true, message: "Conductor actualizado correctamente" });
-
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-driverRouter.put("/update/address/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { driver_address } = req.body;
-
-        if (!driver_address) {
-            return res.status(400).json({ message: "La dirección es requerida" });
-        }
-
-        const [rows] = await pool.query("SELECT * FROM driver WHERE id = ?", [id]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ message: "Conductor no encontrado" });
-        }
-
-        await pool.query("UPDATE driver SET driver_address = ? WHERE id = ?", [driver_address, id]);
-        res.json({ updated: true, message: "Dirección del conductor actualizada correctamente" });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-driverRouter.delete("/delete/:id", async (req, res) => {
-    try {
-        const id = req.params.id;
-        const result = await pool.query("DELETE FROM driver WHERE id = ?", [id]);
-        res.json(result);
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
-driverRouter.delete("/delete/email/:email", async (req, res) => {
-    try {
-        const email = req.params.email;
-        const result = await pool.query("DELETE FROM driver WHERE driver_email = ?", [email]);
-        res.json(result);
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
-export default driverRouter;
+export default driversRouter;
