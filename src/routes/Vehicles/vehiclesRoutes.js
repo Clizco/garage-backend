@@ -109,26 +109,33 @@ vehicleRouter.post(
         year,
         uso,
         precio,
+        precio_venta,
+        estado,
       } = req.body;
 
       if (
         !placa || !ubicacion || !propietario || !municipio ||
         !mes_de_placa || !marca || !modelo || !capacidad ||
-        !ton || !year || !uso || !precio
+        !ton || !year || !uso || !precio || !precio_venta || !estado
       ) {
         return res.status(400).json({ message: "Todos los campos son obligatorios" });
       }
 
       const precioNormalizado = normalizePrecio(precio);
+      const precioVentaNormalizado = normalizePrecio(precio_venta);
+
       if (isNaN(precioNormalizado) || precioNormalizado <= 0) {
         return res.status(400).json({ message: "El precio debe ser un número positivo válido" });
+      }
+      if (isNaN(precioVentaNormalizado) || precioVentaNormalizado <= 0) {
+        return res.status(400).json({ message: "El precio_venta debe ser un número positivo válido" });
       }
 
       // 1) Insert base
       const [result] = await pool.query(
         `INSERT INTO vehicles 
-         (placa, vin, ubicacion, propietario, municipio, mes_de_placa, marca, modelo, capacidad, ton, year, uso, precio) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (placa, vin, ubicacion, propietario, municipio, mes_de_placa, marca, modelo, capacidad, ton, year, uso, precio, precio_venta, estado) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           placa,
           vin || null,
@@ -143,6 +150,8 @@ vehicleRouter.post(
           year,
           uso,
           precioNormalizado,
+          precioVentaNormalizado,
+          estado,
         ]
       );
 
@@ -220,19 +229,26 @@ vehicleRouter.put(
       year,
       uso,
       precio,
+      precio_venta,
+      estado,
     } = req.body;
 
     if (
       !placa || !ubicacion || !propietario || !municipio ||
       !mes_de_placa || !marca || !modelo || !capacidad ||
-      !ton || !year || !uso || !precio
+      !ton || !year || !uso || !precio || !precio_venta || !estado
     ) {
       return res.status(400).json({ message: "Todos los campos son obligatorios" });
     }
 
     const precioNormalizado = normalizePrecio(precio);
+    const precioVentaNormalizado = normalizePrecio(precio_venta);
+
     if (isNaN(precioNormalizado) || precioNormalizado <= 0) {
       return res.status(400).json({ message: "El precio debe ser un número positivo" });
+    }
+    if (isNaN(precioVentaNormalizado) || precioVentaNormalizado <= 0) {
+      return res.status(400).json({ message: "El precio_venta debe ser un número positivo" });
     }
 
     try {
@@ -250,7 +266,9 @@ vehicleRouter.put(
           ton = ?, 
           year = ?, 
           uso = ?, 
-          precio = ?
+          precio = ?,
+          precio_venta = ?,
+          estado = ?
         WHERE id = ?`,
         [
           placa,
@@ -266,6 +284,8 @@ vehicleRouter.put(
           year,
           uso,
           precioNormalizado,
+          precioVentaNormalizado,
+          estado,
           id,
         ]
       );

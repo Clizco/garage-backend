@@ -55,6 +55,8 @@ CREATE TABLE vehicles (
     capacidad INT NOT NULL,
     ton DECIMAL(10,2) NOT NULL,
     `year` YEAR NOT NULL,
+    precio_venta DECIMAL(10,2) NOT NULL,
+    estado VARCHAR(50) NOT NULL,
     uso VARCHAR(100) NOT NULL,
     precio VARCHAR(45) NOT NULL,         
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
