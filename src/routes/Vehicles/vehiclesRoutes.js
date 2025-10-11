@@ -7,7 +7,12 @@ import fsSync from "fs";
 
 const vehicleRouter = Router();
 
-/** ========= MULTER (PDFs e Imágenes) ========= */
+/** ========= MULTER (PDFs e Imágenes) =========
+ * - Aumentamos los límites para permitir archivos grandes.
+ * - Dejamos memoryStorage (tu lógica) pero OJO: si los archivos son muy grandes,
+ *   esto consumirá RAM. Para producción recomiendo diskStorage temporal + rename,
+ *   pero respetamos tu flujo actual.
+ */
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
@@ -30,12 +35,46 @@ const upload = multer({
     }
   },
   limits: {
-    files: 6, // 1 ruv + 1 seguro + hasta 4 imágenes
+    // Máximo de archivos en la petición (1 ruv + 1 seguro + hasta 4 imágenes = 6)
+    // Si quieres permitir más imágenes, sube este número y ajusta el maxCount del campo.
+    files: 12,
+
+    // Tamaño máximo por archivo (ej: 100 MB). Sube esto si necesitas más.
+    fileSize: 100 * 1024 * 1024, // 100MB
+
+    // (Opcional) limitar tamaño total de campos no file; lo dejamos alto por seguridad
+    fieldSize: 10 * 1024 * 1024, // 10MB de campos de texto
   },
 });
 
+/** Middleware para capturar errores de Multer y devolver mensajes claros */
+function handleMulterErrors(mw) {
+  return (req, res, next) => {
+    mw(req, res, (err) => {
+      if (!err) return next();
+      // Mensajes más amigables
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({
+            message:
+              "Archivo demasiado grande. Sube archivos de hasta 100MB o ajusta el límite del servidor.",
+          });
+        }
+        if (err.code === "LIMIT_FILE_COUNT") {
+          return res.status(400).json({
+            message: "Demasiados archivos en la solicitud.",
+          });
+        }
+        return res.status(400).json({ message: `Error de carga: ${err.message}` });
+      }
+      return res.status(400).json({ message: err.message || "Error al subir archivo" });
+    });
+  };
+}
+
 function normalizePrecio(precioStr) {
-  return parseFloat(String(precioStr).replace(/,/g, ""));
+  // acepta "$", "," y espacios
+  return parseFloat(String(precioStr).replace(/[,$\s]/g, ""));
 }
 
 /** Helpers FS */
@@ -88,11 +127,13 @@ vehicleRouter.get("/:id", async (req, res) => {
 // Crear vehículo (con subcarpetas docs/ e images/)
 vehicleRouter.post(
   "/create",
-  upload.fields([
-    { name: "ruv", maxCount: 1 },
-    { name: "seguro_pdf", maxCount: 1 },
-    { name: "vehicle_images", maxCount: 4 },
-  ]),
+  handleMulterErrors(
+    upload.fields([
+      { name: "ruv", maxCount: 1 },
+      { name: "seguro_pdf", maxCount: 1 },
+      { name: "vehicle_images", maxCount: 4 }, // si quieres permitir más, súbelo y ajusta el front
+    ])
+  ),
   async (req, res) => {
     try {
       const {
@@ -208,11 +249,13 @@ vehicleRouter.post(
 // Actualizar vehículo (con subcarpetas docs/ e images/)
 vehicleRouter.put(
   "/vehicles/update/:id",
-  upload.fields([
-    { name: "ruv", maxCount: 1 },
-    { name: "seguro_pdf", maxCount: 1 },
-    { name: "vehicle_images", maxCount: 4 },
-  ]),
+  handleMulterErrors(
+    upload.fields([
+      { name: "ruv", maxCount: 1 },
+      { name: "seguro_pdf", maxCount: 1 },
+      { name: "vehicle_images", maxCount: 4 },
+    ])
+  ),
   async (req, res) => {
     const { id } = req.params;
     const {
