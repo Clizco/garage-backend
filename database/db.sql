@@ -182,3 +182,13 @@ CREATE TABLE observations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+CREATE TABLE contacts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    contact_name VARCHAR(100) NOT NULL,
+    contact_lastname VARCHAR(100) NOT NULL,
+    contact_email VARCHAR(100) NOT NULL,
+    contact_enterprise VARCHAR(100),
+    contact_phone VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
