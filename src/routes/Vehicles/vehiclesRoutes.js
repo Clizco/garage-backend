@@ -247,13 +247,14 @@ vehicleRouter.post(
 );
 
 // Actualizar vehículo (con subcarpetas docs/ e images/)
+// Actualizar vehículo (APPEND imágenes, quitar solo las indicadas)
 vehicleRouter.put(
   "/vehicles/update/:id",
   handleMulterErrors(
     upload.fields([
       { name: "ruv", maxCount: 1 },
       { name: "seguro_pdf", maxCount: 1 },
-      { name: "vehicle_images", maxCount: 4 },
+      { name: "vehicle_images", maxCount: 12 }, // puedes subir varias en una petición
     ])
   ),
   async (req, res) => {
@@ -274,8 +275,10 @@ vehicleRouter.put(
       precio,
       precio_venta,
       estado,
+      removed_images, // ← viene del front (JSON string o array)
     } = req.body;
 
+    // ===== Validaciones base (mismas que tenías) =====
     if (
       !placa || !ubicacion || !propietario || !municipio ||
       !mes_de_placa || !marca || !modelo || !capacidad ||
@@ -295,6 +298,7 @@ vehicleRouter.put(
     }
 
     try {
+      // ===== 1) Actualizar campos base =====
       const [result] = await pool.query(
         `UPDATE vehicles SET 
           placa = ?, 
@@ -345,7 +349,7 @@ vehicleRouter.put(
 
       const files = req.files || {};
 
-      // Nuevo RUV => borrar ruv_* en docs/ y subir el nuevo
+      // ===== 2) PDFs (misma lógica, reemplazan su tipo) =====
       if (files.ruv && files.ruv[0]) {
         await removeFilesByPrefix(docsDir, "ruv_");
         const file = files.ruv[0];
@@ -355,7 +359,6 @@ vehicleRouter.put(
         await pool.query("UPDATE vehicles SET ruv = ? WHERE id = ?", [relPath, id]);
       }
 
-      // Nuevo SEGURO => borrar seguro_* en docs/ y subir el nuevo
       if (files.seguro_pdf && files.seguro_pdf[0]) {
         await removeFilesByPrefix(docsDir, "seguro_");
         const file = files.seguro_pdf[0];
@@ -365,28 +368,82 @@ vehicleRouter.put(
         await pool.query("UPDATE vehicles SET seguro_pdf = ? WHERE id = ?", [relPath, id]);
       }
 
-      // Nuevas IMÁGENES => borrar img_* en images/ y setear JSON nuevo
-      if (files.vehicle_images && files.vehicle_images.length > 0) {
-        await removeFilesByPrefix(imagesDir, "img_");
-        const paths = [];
-        for (let i = 0; i < Math.min(files.vehicle_images.length, 4); i++) {
-          const f = files.vehicle_images[i];
-          const ext = path.extname(f.originalname) || ".jpg";
-          const fileName = `img_${i + 1}_${Date.now()}${ext}`;
-          const relPath  = path.join("uploads", "vehicles", String(id), "images", fileName);
-          await writeBuffer(relPath, f.buffer);
-          paths.push(relPath);
-        }
-        await pool.query("UPDATE vehicles SET vehicle_images = ? WHERE id = ?", [JSON.stringify(paths), id]);
+      // ===== 3) IMÁGENES: APPEND + REMOVER SOLO LAS INDICADAS =====
+
+      // 3.1) Traer del DB las imágenes actuales
+      const [rows] = await pool.query(
+        "SELECT vehicle_images FROM vehicles WHERE id = ?",
+        [id]
+      );
+      const currentJson = rows?.[0]?.vehicle_images || "[]";
+      let currentImages = [];
+      try {
+        currentImages = JSON.parse(currentJson);
+        if (!Array.isArray(currentImages)) currentImages = [];
+      } catch {
+        currentImages = [];
       }
 
-      res.json({ message: "Vehículo actualizado correctamente" });
+      // 3.2) Quitar solo las que marca el front en removed_images
+      let toRemove = [];
+      if (Array.isArray(removed_images)) {
+        toRemove = removed_images;
+      } else if (typeof removed_images === "string" && removed_images.trim()) {
+        try {
+          const parsed = JSON.parse(removed_images);
+          if (Array.isArray(parsed)) toRemove = parsed;
+        } catch {
+          // si mandan CSV por error
+          toRemove = removed_images.split(",").map(s => s.trim()).filter(Boolean);
+        }
+      }
+
+      if (toRemove.length > 0) {
+        // eliminar físicamente los archivos indicados (si existen)
+        for (const rel of toRemove) {
+          const abs = path.join(process.cwd(), rel);
+          if (fsSync.existsSync(abs)) {
+            try { await fs.unlink(abs); } catch (_) {}
+          }
+        }
+        // y filtrarlos del arreglo actual
+        const toRemoveSet = new Set(toRemove);
+        currentImages = currentImages.filter(p => !toRemoveSet.has(p));
+      }
+
+      // 3.3) Agregar nuevas (sin borrar las existentes)
+      const MAX_TOTAL_IMAGES = 12; // ← Ajusta el tope total que quieras
+      const remainingSlots   = Math.max(0, MAX_TOTAL_IMAGES - currentImages.length);
+
+      if (files.vehicle_images && files.vehicle_images.length > 0 && remainingSlots > 0) {
+        // Solo procesar hasta "remainingSlots"
+        const toProcess = files.vehicle_images.slice(0, remainingSlots);
+        for (let i = 0; i < toProcess.length; i++) {
+          const f = toProcess[i];
+          const ext = path.extname(f.originalname) || ".jpg";
+          // usa el largo actual para numerar o simplemente usa timestamp
+          const fileName = `img_${currentImages.length + 1}_${Date.now()}${ext}`;
+          const relPath  = path.join("uploads", "vehicles", String(id), "images", fileName);
+          await writeBuffer(relPath, f.buffer);
+          currentImages.push(relPath);
+        }
+      }
+
+      // 3.4) Guardar el arreglo final (si hay cambios)
+      await pool.query(
+        "UPDATE vehicles SET vehicle_images = ? WHERE id = ?",
+        [JSON.stringify(currentImages), id]
+      );
+
+      // ===== 4) Respuesta =====
+      res.json({ message: "Vehículo actualizado correctamente", images: currentImages });
     } catch (error) {
-      console.error(error);
+      console.error("Error al actualizar vehículo:", error);
       res.status(500).json({ message: "Error al actualizar vehículo" });
     }
   }
 );
+
 
 // Eliminar vehículo + carpetas
 vehicleRouter.delete("/delete/:id", async (req, res) => {
