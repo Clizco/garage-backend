@@ -21,6 +21,7 @@ import workshopReportRouter from "./routes/WorkshopReport/workshopreportRoutes.j
 import routesRouter from "./routes/Routes/routesRoutes.js";
 import observationsRouter from "./routes/Observations/observationsRoutes.js";
 import contactsRouter from "./routes/Contacts/contactsRoutes.js";
+import locationsRouter from "./routes/Locations/locationsRoutes.js";
 
 dotenv.config();
 
@@ -85,6 +86,7 @@ expressApp.use("/workshop-reports", workshopReportRouter);
 expressApp.use("/routes", routesRouter);
 expressApp.use("/observations", observationsRouter);
 expressApp.use("/contacts", contactsRouter);
+expressApp.use("/locations", locationsRouter);
 
 // starting the server
 export default expressApp;

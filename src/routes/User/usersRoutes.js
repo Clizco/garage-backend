@@ -195,6 +195,41 @@ userRouter.put("/users/update/:id", async (req, res) => {
   }
 });
 
+// Actualizar contraseña de usuario (admin)
+userRouter.put("/users/update-password/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_password } = req.body;
+
+    if (!user_password) {
+      return res.status(400).json({ message: "La contraseña es obligatoria" });
+    }
+
+    if (user_password.length < 6 || !/[A-Z]/.test(user_password) || !/\d/.test(user_password)) {
+      return res.status(400).json({
+        message: "La contraseña debe tener al menos 6 caracteres, una mayúscula y un número",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(user_password, salt);
+
+    const [result] = await pool.query(
+      "UPDATE users SET user_password = ? WHERE id = ?",
+      [hash, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    return res.status(200).json({ message: "Contraseña actualizada correctamente" });
+  } catch (error) {
+    console.error("Error al actualizar contraseña:", error);
+    return res.status(500).json({ message: "Error del servidor" });
+  }
+});
+
 // Obtener rol
 userRouter.get("/users/role/:id", async (req, res) => {
   try {
