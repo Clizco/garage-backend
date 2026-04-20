@@ -48,17 +48,18 @@ CREATE TABLE vehicles (
     ruv VARCHAR(50),
     ubicacion VARCHAR(100),
     propietario VARCHAR(100),
-    municipio VARCHAR(100) NOT NULL,        
-    mes_de_placa VARCHAR(20) NOT NULL,      
-    marca VARCHAR(50) NOT NULL,
-    modelo VARCHAR(50) NOT NULL,
-    capacidad INT NOT NULL,
-    ton DECIMAL(10,2) NOT NULL,
-    `year` YEAR NOT NULL,
-    precio_venta DECIMAL(10,2) NOT NULL,
-    estado VARCHAR(50) NOT NULL,
-    uso VARCHAR(100) NOT NULL,
-    precio VARCHAR(45) NOT NULL,         
+    municipio VARCHAR(100),
+    mes_de_placa VARCHAR(20),
+    marca VARCHAR(50),
+    modelo VARCHAR(50),
+    capacidad INT,
+    ton DECIMAL(10,2),
+    `year` YEAR,
+    precio_venta DECIMAL(10,2),
+    estado VARCHAR(50),
+    uso VARCHAR(100),
+    panapass VARCHAR(50),
+    precio VARCHAR(45),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -197,4 +198,29 @@ CREATE TABLE locations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     location_name VARCHAR(120) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE owners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    owner_name VARCHAR(120) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE audit_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  user_email VARCHAR(100),
+  action VARCHAR(50) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id INT,
+  entity_name VARCHAR(255),
+  changes JSON,
+  ip_address VARCHAR(50),
+  user_agent VARCHAR(500),
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_user_id (user_id),
+  INDEX idx_entity_type (entity_type),
+  INDEX idx_timestamp (timestamp)
 );

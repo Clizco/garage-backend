@@ -22,6 +22,8 @@ import routesRouter from "./routes/Routes/routesRoutes.js";
 import observationsRouter from "./routes/Observations/observationsRoutes.js";
 import contactsRouter from "./routes/Contacts/contactsRoutes.js";
 import locationsRouter from "./routes/Locations/locationsRoutes.js";
+import ownersRouter from "./routes/Owners/ownersRoutes.js";
+import auditLogsRouter from "./routes/AuditLogs/auditLogsRoutes.js";
 
 dotenv.config();
 
@@ -87,6 +89,8 @@ expressApp.use("/routes", routesRouter);
 expressApp.use("/observations", observationsRouter);
 expressApp.use("/contacts", contactsRouter);
 expressApp.use("/locations", locationsRouter);
+expressApp.use("/owners", ownersRouter);
+expressApp.use("/audit-logs", auditLogsRouter);
 
 // starting the server
 export default expressApp;

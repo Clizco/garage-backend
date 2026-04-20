@@ -4,6 +4,7 @@ import { pool } from "../../db.js";
 import path from "path";
 import fs from "fs/promises";
 import fsSync from "fs";
+import { createAuditLog, extractActorFromRequest } from "../../services/auditLogService.js";
 
 const vehicleRouter = Router();
 
@@ -77,6 +78,103 @@ function normalizePrecio(precioStr) {
   return parseFloat(String(precioStr).replace(/[,$\s]/g, ""));
 }
 
+function emptyToNull(value) {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value).trim();
+  return normalized ? normalized : null;
+}
+
+function parseIntegerOrNull(value) {
+  const normalized = emptyToNull(value);
+  if (normalized === null) return null;
+  const parsed = parseInt(normalized, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function parseDecimalOrNull(value) {
+  const normalized = emptyToNull(value);
+  if (normalized === null) return null;
+  const parsed = parseFloat(normalized);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function normalizeAuditValue(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    return normalized.length ? normalized : null;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  return value;
+}
+
+function buildChangedFields(previousRow, nextValues) {
+  const changedFields = {};
+
+  for (const [field, nextValueRaw] of Object.entries(nextValues)) {
+    const before = normalizeAuditValue(previousRow?.[field]);
+    const after = normalizeAuditValue(nextValueRaw);
+    if (before !== after) {
+      changedFields[field] = { before, after };
+    }
+  }
+
+  return changedFields;
+}
+
+let panapassColumnEnsured = false;
+async function ensureVehiclePanapassColumn() {
+  if (panapassColumnEnsured) return;
+  try {
+    await pool.query("ALTER TABLE vehicles ADD COLUMN panapass VARCHAR(50) NULL");
+  } catch (error) {
+    if (error.code !== "ER_DUP_FIELDNAME") {
+      throw error;
+    }
+  }
+  panapassColumnEnsured = true;
+}
+
+let optionalVehicleColumnsEnsured = false;
+async function ensureVehicleOptionalColumns() {
+  if (optionalVehicleColumnsEnsured) return;
+
+  await pool.query(`
+    UPDATE vehicles
+    SET \`year\` = 1901
+    WHERE \`year\` IS NOT NULL
+      AND (
+        TRIM(CAST(\`year\` AS CHAR)) = ''
+        OR CAST(\`year\` AS UNSIGNED) < 1901
+        OR CAST(\`year\` AS UNSIGNED) > 2155
+      )
+  `);
+
+  const alterStatements = [
+    "ALTER TABLE vehicles MODIFY ubicacion VARCHAR(100) NULL",
+    "ALTER TABLE vehicles MODIFY propietario VARCHAR(100) NULL",
+    "ALTER TABLE vehicles MODIFY municipio VARCHAR(100) NULL",
+    "ALTER TABLE vehicles MODIFY mes_de_placa VARCHAR(20) NULL",
+    "ALTER TABLE vehicles MODIFY marca VARCHAR(50) NULL",
+    "ALTER TABLE vehicles MODIFY modelo VARCHAR(50) NULL",
+    "ALTER TABLE vehicles MODIFY capacidad INT NULL",
+    "ALTER TABLE vehicles MODIFY ton DECIMAL(10,2) NULL",
+    "ALTER TABLE vehicles MODIFY \`year\` YEAR NULL",
+    "ALTER TABLE vehicles MODIFY precio_venta DECIMAL(10,2) NULL",
+    "ALTER TABLE vehicles MODIFY estado VARCHAR(50) NULL",
+    "ALTER TABLE vehicles MODIFY uso VARCHAR(100) NULL",
+    "ALTER TABLE vehicles MODIFY precio VARCHAR(45) NULL",
+  ];
+
+  for (const statement of alterStatements) {
+    await pool.query(statement);
+  }
+
+  optionalVehicleColumnsEnsured = true;
+}
+
 /** Helpers FS */
 async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
@@ -136,6 +234,7 @@ vehicleRouter.post(
   ),
   async (req, res) => {
     try {
+      const actor = extractActorFromRequest(req);
       const {
         placa,
         vin,
@@ -149,50 +248,53 @@ vehicleRouter.post(
         ton,
         year,
         uso,
+        panapass,
         precio,
         precio_venta,
         estado,
       } = req.body;
 
-      if (
-        !placa || !ubicacion || !propietario || !municipio ||
-        !mes_de_placa || !marca || !modelo || !capacidad ||
-        !ton || !year || !uso || !precio || !precio_venta || !estado
-      ) {
-        return res.status(400).json({ message: "Todos los campos son obligatorios" });
+      if (!placa || !String(placa).trim()) {
+        return res.status(400).json({ message: "La placa es obligatoria" });
       }
 
-      const precioNormalizado = normalizePrecio(precio);
-      const precioVentaNormalizado = normalizePrecio(precio_venta);
+      await ensureVehiclePanapassColumn();
+      await ensureVehicleOptionalColumns();
 
-      if (isNaN(precioNormalizado) || precioNormalizado <= 0) {
-        return res.status(400).json({ message: "El precio debe ser un número positivo válido" });
+      const precioIngresado = emptyToNull(precio);
+      const precioVentaIngresado = emptyToNull(precio_venta);
+      const precioNormalizado = precioIngresado ? normalizePrecio(precioIngresado) : null;
+      const precioVentaNormalizado = precioVentaIngresado ? normalizePrecio(precioVentaIngresado) : null;
+
+      if (precioIngresado && isNaN(precioNormalizado)) {
+        return res.status(400).json({ message: "El precio debe ser un número válido" });
       }
-      if (isNaN(precioVentaNormalizado) || precioVentaNormalizado <= 0) {
-        return res.status(400).json({ message: "El precio_venta debe ser un número positivo válido" });
+      if (precioVentaIngresado && isNaN(precioVentaNormalizado)) {
+        return res.status(400).json({ message: "El precio_venta debe ser un número válido" });
       }
 
       // 1) Insert base
       const [result] = await pool.query(
         `INSERT INTO vehicles 
-         (placa, vin, ubicacion, propietario, municipio, mes_de_placa, marca, modelo, capacidad, ton, year, uso, precio, precio_venta, estado) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (placa, vin, ubicacion, propietario, municipio, mes_de_placa, marca, modelo, capacidad, ton, year, uso, panapass, precio, precio_venta, estado) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          placa,
-          vin || null,
-          ubicacion,
-          propietario,
-          municipio,
-          mes_de_placa,
-          marca,
-          modelo,
-          parseInt(capacidad),
-          parseFloat(ton),
-          year,
-          uso,
+          String(placa).trim(),
+          emptyToNull(vin),
+          emptyToNull(ubicacion),
+          emptyToNull(propietario),
+          emptyToNull(municipio),
+          emptyToNull(mes_de_placa),
+          emptyToNull(marca),
+          emptyToNull(modelo),
+          parseIntegerOrNull(capacidad),
+          parseDecimalOrNull(ton),
+          emptyToNull(year),
+          emptyToNull(uso),
+          emptyToNull(panapass),
           precioNormalizado,
           precioVentaNormalizado,
-          estado,
+          emptyToNull(estado),
         ]
       );
 
@@ -238,6 +340,19 @@ vehicleRouter.post(
         await pool.query("UPDATE vehicles SET vehicle_images = ? WHERE id = ?", [JSON.stringify(paths), vehicleId]);
       }
 
+      // ✅ Registrar en logs
+      await createAuditLog({
+        userId: actor.userId,
+        userEmail: actor.userEmail,
+        action: "CREATE",
+        entityType: "VEHICLE",
+        entityId: vehicleId,
+        entityName: placa,
+        changes: { placa, marca, modelo, year, estado },
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
       res.status(201).json({ message: "Vehículo registrado correctamente", id: vehicleId });
     } catch (error) {
       console.error("Error al registrar vehículo:", error);
@@ -259,6 +374,7 @@ vehicleRouter.put(
   ),
   async (req, res) => {
     const { id } = req.params;
+    const actor = extractActorFromRequest(req);
     const {
       placa,
       vin,
@@ -272,6 +388,7 @@ vehicleRouter.put(
       ton,
       year,
       uso,
+      panapass,
       precio,
       precio_venta,
       estado,
@@ -279,25 +396,52 @@ vehicleRouter.put(
     } = req.body;
 
     // ===== Validaciones base (mismas que tenías) =====
-    if (
-      !placa || !ubicacion || !propietario || !municipio ||
-      !mes_de_placa || !marca || !modelo || !capacidad ||
-      !ton || !year || !uso || !precio || !precio_venta || !estado
-    ) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+    if (!placa || !String(placa).trim()) {
+      return res.status(400).json({ message: "La placa es obligatoria" });
     }
 
-    const precioNormalizado = normalizePrecio(precio);
-    const precioVentaNormalizado = normalizePrecio(precio_venta);
+    await ensureVehiclePanapassColumn();
+    await ensureVehicleOptionalColumns();
 
-    if (isNaN(precioNormalizado) || precioNormalizado <= 0) {
-      return res.status(400).json({ message: "El precio debe ser un número positivo" });
+    const precioIngresado = emptyToNull(precio);
+    const precioVentaIngresado = emptyToNull(precio_venta);
+    const precioNormalizado = precioIngresado ? normalizePrecio(precioIngresado) : null;
+    const precioVentaNormalizado = precioVentaIngresado ? normalizePrecio(precioVentaIngresado) : null;
+
+    if (precioIngresado && isNaN(precioNormalizado)) {
+      return res.status(400).json({ message: "El precio debe ser un número válido" });
     }
-    if (isNaN(precioVentaNormalizado) || precioVentaNormalizado <= 0) {
-      return res.status(400).json({ message: "El precio_venta debe ser un número positivo" });
+    if (precioVentaIngresado && isNaN(precioVentaNormalizado)) {
+      return res.status(400).json({ message: "El precio_venta debe ser un número válido" });
     }
 
     try {
+      const [beforeRows] = await pool.query("SELECT * FROM vehicles WHERE id = ?", [id]);
+      if (!beforeRows.length) {
+        return res.status(404).json({ message: "Vehículo no encontrado" });
+      }
+
+      const previousVehicle = beforeRows[0];
+
+      const normalizedUpdatePayload = {
+        placa: String(placa).trim(),
+        vin: emptyToNull(vin),
+        ubicacion: emptyToNull(ubicacion),
+        propietario: emptyToNull(propietario),
+        municipio: emptyToNull(municipio),
+        mes_de_placa: emptyToNull(mes_de_placa),
+        marca: emptyToNull(marca),
+        modelo: emptyToNull(modelo),
+        capacidad: parseIntegerOrNull(capacidad),
+        ton: parseDecimalOrNull(ton),
+        year: emptyToNull(year),
+        uso: emptyToNull(uso),
+        panapass: emptyToNull(panapass),
+        precio: precioNormalizado,
+        precio_venta: precioVentaNormalizado,
+        estado: emptyToNull(estado),
+      };
+
       // ===== 1) Actualizar campos base =====
       const [result] = await pool.query(
         `UPDATE vehicles SET 
@@ -311,28 +455,30 @@ vehicleRouter.put(
           modelo = ?, 
           capacidad = ?, 
           ton = ?, 
-          year = ?, 
-          uso = ?, 
+          year = ?,
+          uso = ?,
+          panapass = ?,
           precio = ?,
           precio_venta = ?,
           estado = ?
         WHERE id = ?`,
         [
-          placa,
-          vin || null,
-          ubicacion,
-          propietario,
-          municipio,
-          mes_de_placa,
-          marca,
-          modelo,
-          parseInt(capacidad),
-          parseFloat(ton),
-          year,
-          uso,
-          precioNormalizado,
-          precioVentaNormalizado,
-          estado,
+          normalizedUpdatePayload.placa,
+          normalizedUpdatePayload.vin,
+          normalizedUpdatePayload.ubicacion,
+          normalizedUpdatePayload.propietario,
+          normalizedUpdatePayload.municipio,
+          normalizedUpdatePayload.mes_de_placa,
+          normalizedUpdatePayload.marca,
+          normalizedUpdatePayload.modelo,
+          normalizedUpdatePayload.capacidad,
+          normalizedUpdatePayload.ton,
+          normalizedUpdatePayload.year,
+          normalizedUpdatePayload.uso,
+          normalizedUpdatePayload.panapass,
+          normalizedUpdatePayload.precio,
+          normalizedUpdatePayload.precio_venta,
+          normalizedUpdatePayload.estado,
           id,
         ]
       );
@@ -414,6 +560,7 @@ vehicleRouter.put(
       // 3.3) Agregar nuevas (sin borrar las existentes)
       const MAX_TOTAL_IMAGES = 12; // ← Ajusta el tope total que quieras
       const remainingSlots   = Math.max(0, MAX_TOTAL_IMAGES - currentImages.length);
+      const imagesCountBeforeAdd = currentImages.length;
 
       if (files.vehicle_images && files.vehicle_images.length > 0 && remainingSlots > 0) {
         // Solo procesar hasta "remainingSlots"
@@ -429,6 +576,12 @@ vehicleRouter.put(
         }
       }
 
+      const changedFields = buildChangedFields(previousVehicle, normalizedUpdatePayload);
+      const removedImagesCount = toRemove.length;
+      const addedImagesCount = Math.max(0, currentImages.length - imagesCountBeforeAdd);
+      const hasRuvReplacement = Boolean(files.ruv && files.ruv[0]);
+      const hasSeguroReplacement = Boolean(files.seguro_pdf && files.seguro_pdf[0]);
+
       // 3.4) Guardar el arreglo final (si hay cambios)
       await pool.query(
         "UPDATE vehicles SET vehicle_images = ? WHERE id = ?",
@@ -436,6 +589,27 @@ vehicleRouter.put(
       );
 
       // ===== 4) Respuesta =====
+      // ✅ Registrar actualización en logs
+      await createAuditLog({
+        userId: actor.userId,
+        userEmail: actor.userEmail,
+        action: "UPDATE",
+        entityType: "VEHICLE",
+        entityId: parseInt(id),
+        entityName: normalizedUpdatePayload.placa || previousVehicle?.placa || "Vehículo",
+        changes: {
+          changedFields,
+          files: {
+            ruvUpdated: hasRuvReplacement,
+            seguroUpdated: hasSeguroReplacement,
+            imagesAdded: addedImagesCount,
+            imagesRemoved: removedImagesCount,
+          },
+        },
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
       res.json({ message: "Vehículo actualizado correctamente", images: currentImages });
     } catch (error) {
       console.error("Error al actualizar vehículo:", error);
@@ -449,11 +623,27 @@ vehicleRouter.put(
 vehicleRouter.delete("/delete/:id", async (req, res) => {
   const { id } = req.params;
   try {
+    const actor = extractActorFromRequest(req);
+    // Traer info del vehículo antes de eliminarlo
+    const [vehicle] = await pool.query("SELECT placa FROM vehicles WHERE id = ?", [id]);
+
     const [result] = await pool.query("DELETE FROM vehicles WHERE id = ?", [id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Vehículo no encontrado" });
     }
+
+    // ✅ Registrar eliminación en logs
+    await createAuditLog({
+      userId: actor.userId,
+      userEmail: actor.userEmail,
+      action: "DELETE",
+      entityType: "VEHICLE",
+      entityId: parseInt(id),
+      entityName: vehicle[0]?.placa || "Vehículo",
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+    });
 
     const dirPath = path.join("uploads", "vehicles", id.toString());
     if (fsSync.existsSync(dirPath)) {

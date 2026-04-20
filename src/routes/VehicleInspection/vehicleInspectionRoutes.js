@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { pool } from "../../db.js";
+import { createAuditLog, extractActorFromRequest } from "../../services/auditLogService.js";
 
 const vehicleInspectionRouter = Router();
 
 // Crear una inspección de entrada o salida
 vehicleInspectionRouter.post("/", async (req, res) => {
   try {
+    const actor = extractActorFromRequest(req);
     const {
       vehicle_id,
       tipo, // "entrada" o "salida"
@@ -42,6 +44,20 @@ vehicleInspectionRouter.post("/", async (req, res) => {
         observaciones || null
       ]
     );
+
+    const [vehicleRows] = await pool.query("SELECT placa FROM vehicles WHERE id = ?", [vehicle_id]);
+
+    await createAuditLog({
+      userId: actor.userId,
+      userEmail: actor.userEmail,
+      action: "CREATE",
+      entityType: "VEHICLE_INSPECTION",
+      entityId: result.insertId,
+      entityName: vehicleRows[0]?.placa || `Vehículo ${vehicle_id}`,
+      changes: { tipo, kilometraje: kilometraje || null, nivel_combustible },
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+    });
 
     res.status(201).json({
       message: "Inspección registrada correctamente",
@@ -88,10 +104,32 @@ vehicleInspectionRouter.get("/all", async (req, res) => {
 vehicleInspectionRouter.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {
+    const actor = extractActorFromRequest(req);
+    const [inspectionRows] = await pool.query(
+      "SELECT vehicle_id, tipo FROM vehicle_inspections WHERE id = ?",
+      [id]
+    );
+
     const [result] = await pool.query("DELETE FROM vehicle_inspections WHERE id = ?", [id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Inspección no encontrada" });
+    }
+
+    const inspection = inspectionRows[0];
+    if (inspection) {
+      const [vehicleRows] = await pool.query("SELECT placa FROM vehicles WHERE id = ?", [inspection.vehicle_id]);
+      await createAuditLog({
+        userId: actor.userId,
+        userEmail: actor.userEmail,
+        action: "DELETE",
+        entityType: "VEHICLE_INSPECTION",
+        entityId: parseInt(id),
+        entityName: vehicleRows[0]?.placa || `Vehículo ${inspection.vehicle_id}`,
+        changes: { tipo: inspection.tipo },
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
     }
 
     res.json({ message: "Inspección eliminada correctamente" });
