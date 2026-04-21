@@ -117,6 +117,12 @@ function coerceNumericId(value) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function normalizeToken(rawToken) {
+  if (typeof rawToken !== "string") return null
+  const trimmed = rawToken.trim().replace(/^"|"$/g, "")
+  return trimmed.length ? trimmed : null
+}
+
 function inferEntityId(req, responseBody) {
   const candidates = [
     responseBody?.id,
@@ -230,11 +236,16 @@ export function extractActorFromRequest(req) {
 
   const bearer = req?.headers?.authorization
   const xAccessToken = req?.headers?.["x-access-token"]
+  const cookieToken = req?.cookies?.token
+  const authToken = normalizeToken(
+    typeof bearer === "string"
+      ? bearer.replace(/^Bearer\s+/i, "")
+      : null
+  )
   const token =
-    (typeof bearer === "string" && bearer.startsWith("Bearer ")
-      ? bearer.slice(7).trim()
-      : null) ||
-    (typeof xAccessToken === "string" ? xAccessToken : null)
+    authToken ||
+    normalizeToken(typeof xAccessToken === "string" ? xAccessToken : null) ||
+    normalizeToken(cookieToken)
 
   if (!token) {
     return { userId: null, userEmail: null }
@@ -247,7 +258,11 @@ export function extractActorFromRequest(req) {
       userEmail: decoded?.user_email || decoded?.email || null,
     }
   } catch {
-    return { userId: bodyUserId || null, userEmail: null }
+    const decodedUnsafe = jwt.decode(token)
+    return {
+      userId: coerceNumericId(decodedUnsafe?.id) || bodyUserId || null,
+      userEmail: decodedUnsafe?.user_email || decodedUnsafe?.email || null,
+    }
   }
 }
 
