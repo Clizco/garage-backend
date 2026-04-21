@@ -24,6 +24,7 @@ import contactsRouter from "./routes/Contacts/contactsRoutes.js";
 import locationsRouter from "./routes/Locations/locationsRoutes.js";
 import ownersRouter from "./routes/Owners/ownersRoutes.js";
 import auditLogsRouter from "./routes/AuditLogs/auditLogsRoutes.js";
+import { autoAuditMiddleware, requireAuthenticatedMutation } from "./services/auditLogService.js";
 
 dotenv.config();
 
@@ -50,6 +51,8 @@ expressApp.use(cookieParser());
 expressApp.use(express.text());
 expressApp.use(express.json());
 expressApp.use(cors());
+expressApp.use(requireAuthenticatedMutation);
+expressApp.use(autoAuditMiddleware);
 
 // Ensure uploads folders exist
 const uploadsBasePath = path.resolve(__dirname, '../uploads');

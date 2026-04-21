@@ -115,6 +115,24 @@ ownersRouter.put("/update/:id", async (req, res) => {
   }
 });
 
+ownersRouter.delete("/delete/:id", async (req, res) => {
+  try {
+    await ensureOwnersTable();
+
+    const { id } = req.params;
+    const [result] = await pool.query("DELETE FROM owners WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Propietario no encontrado" });
+    }
+
+    res.json({ message: "Propietario eliminado correctamente" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al eliminar propietario" });
+  }
+});
+
 ownersRouter.post("/migrate-from-vehicles", async (_, res) => {
   try {
     const inserted = await migrateOwnersFromVehicles();
