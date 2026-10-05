@@ -1,10 +1,11 @@
 import { createPool } from 'mysql2/promise';
+import "./config.js"; // carga las variables de entorno
 
 export const pool = createPool({
-    host: "178.128.72.192",
-    user: "koli_user",
-    password: "Aa123456*7!",
-    port : 3306, 
-    database: "koli",
-    timezone: "-05:00" // ← importante para forzar hora de Panamá
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    port: Number(process.env.DB_PORT) || 3306,
+    database: process.env.DB_NAME,
+    timezone: process.env.DB_TIMEZONE || "-05:00" // ← importante para forzar hora de Panamá
 });
